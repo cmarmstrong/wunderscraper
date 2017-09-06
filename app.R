@@ -12,7 +12,7 @@ wuKey <- readRDS('resources/key.rds')
 wuUrl <- 'http://api.wunderground.com'
 wsg84String <- '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'
 
-zcta <- st_read('resources/cb_2016_us_zcta510_500k')
+## zcta <- st_read('resources/cb_2016_us_zcta510_500k')
 co <- st_read('resources/cb_2016_us_county_500k')
 zctaRel <- read.csv('resources/zcta_county_rel_10.txt', colClasses=c(ZCTA5='character', STATE='character', COUNTY='character', GEOID='character'))
 coRel <- zctaRel[!duplicated(zctaRel $GEOID), c('ZCTA5', 'GEOID', 'COPOP')]
