@@ -30,7 +30,7 @@ WUpath <- function(key, feature, id, format) {
 
 count <- function(counter) { # ensures api calls remain within minute and daily limits
     repeat{
-        d <- Sys.Date()
+        d <- format(Sys.Date(), tz='America/New_York')
         if(counter $date!=d) {
             counter $count <- 0
             counter $date <- d
@@ -44,7 +44,7 @@ count <- function(counter) { # ensures api calls remain within minute and daily 
 }
 
 
-counter <- list(count=0, date=Sys.Date())
+counter <- list(count=0, date=format(Sys.Date(), tz='America/New_York'))
 repeat{
     s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
     ## if(any(s %in% OCONUS)) next
