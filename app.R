@@ -43,23 +43,27 @@ count <- function(counter) { # ensures api calls remain within minute and daily 
     counter
 }
 
+## schedule <- function(scheduler) repeat if(Sys.time()) break
+
 
 counter <- list(count=0, date=format(Sys.Date(), tz='America/New_York'))
+## schedule <- list()
 repeat{
     s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
     ## if(any(s %in% OCONUS)) next
-    geolookups <- sapply(zctaRel[zctaRel $GEOID==s, ] $ZCTA5, function(query) {
+    geolookups <- lapply(zctaRel[zctaRel $GEOID==s, ] $ZCTA5, function(query) {
         counter <- count(counter)
         GETjson(wuUrl, WUpath(wuKey, 'geolookup', query, 'json'))
     })
-    geolookups <- apply(geolookups, 2, function(zcta) {
+    geolookups <- lapply(geolookups, function(zcta) {
+        if(!is.null(zcta $response $error)) return(NA)
         z <- zcta $location $zip
         with(zcta $location $nearby_weather_stations $pws $station,
              st_sf(geometry=st_cast(st_sfc(st_multipoint(matrix(c(lon, lat), ncol=2))), 'POINT'),
                    id=id,
                    ZCTA5=z)) # zcta is unecessary
     })
-    geolookups <- do.call(rbind, geolookups)
+    geolookups <- do.call(rbind, geolookups[!is.na(geolookups)])
     geolookups <- geolookups[!duplicated(geolookups $id), ]
     st_crs(geolookups) <- 4326 ## WU in 4326
     geolookups <- st_transform(geolookups, st_crs(co))
