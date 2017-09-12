@@ -36,6 +36,8 @@ WUpath <- function(key, feature, id, format) {
 }
 
 count <- function(counter) { # ensures api calls remain within minute and daily limits
+    Sys.sleep(counter $period)
+    counter $period <- 0
     repeat if(H<strftime(Sys.time(), '%H')) Sys.sleep(600) # wait till start hour
     repeat{
         d <- format(Sys.Date(), tz='America/New_York')
@@ -52,7 +54,7 @@ count <- function(counter) { # ensures api calls remain within minute and daily 
 }
 
 
-counter <- list(count=0, date=format(Sys.Date(), tz='America/New_York'))
+counter <- list(count=0, period=0, date=format(Sys.Date(), tz='America/New_York'))
 repeat{
     s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
     ## if(any(s %in% OCONUS)) next
@@ -86,6 +88,7 @@ repeat{
         wuUrn <- WUpath(wuKey, 'conditions', paste('pws', query, sep=':'), 'json')
         write_json(toJSON(GETjson(wuUrl, wuUrn)), file.path(dirname, paste0(query, '.json')))
     }
+    counter $period <- PERIOD # reset sample period
 }
 
 ## sampleRunTime <- length(s) * (60/MINUTECOUNT) # time-to-sample estimate
