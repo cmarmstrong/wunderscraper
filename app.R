@@ -57,17 +57,20 @@ repeat{
     })
     geolookups <- lapply(geolookups, function(zcta) {
         if(!is.null(zcta $response $error)) return(NA)
-        z <- zcta $location $zip
+        ## z <- zcta $location $zip
         with(zcta $location $nearby_weather_stations $pws $station,
              st_sf(geometry=st_cast(st_sfc(st_multipoint(matrix(c(lon, lat), ncol=2))), 'POINT'),
-                   id=id,
-                   ZCTA5=z)) # zcta is unecessary
+                   id=id)) # ,
+                   ## ZCTA5=z)) # zcta is unecessary
     })
     geolookups <- do.call(rbind, geolookups[!is.na(geolookups)])
     geolookups <- geolookups[!duplicated(geolookups $id), ]
     st_crs(geolookups) <- 4326 ## WU in 4326
     geolookups <- st_transform(geolookups, st_crs(co))
     geolookups <- st_intersection(geolookups, co[co $GEOID==s, ])
+    m <- Mclust(st_coordinates(geolookups), modelNames='VII')
+    geolookups $cluster <- m $classification
+    geolookups $grid <- unlist(st_intersects(geolookups, st_make_grid(geolookups, 0.01)))
     dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
     dir.create(dirname)
     for(query in geolookups $id) {
