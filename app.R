@@ -9,11 +9,12 @@ DATADIR <- 'json' # file.path('E:', 'data', 'wu')
 ##          outside us , NY:=005, PR & USVI  , AP         , pacific    , AS
 OCONUS <- c(00100:00499,          00600:00999, 96200:96699, 96900:96999, 96799)
 
-DAILYCOUNT <- 500
+DAILYCOUNT <- 100
 MINUTECOUNT <- 10
 PERIOD <- 7200    # sample period in seconds
 SLEEP <- 600      # sleep period in seconds
 H <- 5            # start hour
+SAMPLECO <- FALSE # if false: resample same county
 
 wuKey <- readRDS('resources/key.rds')
 wuUrl <- 'http://api.wunderground.com'
@@ -35,10 +36,13 @@ WUpath <- function(key, feature, id, format) {
     paste(paste('api', key, feature, 'q', id, sep='/'), format, sep='.')
 }
 
-count <- function(counter) { # ensures api calls remain within minute and daily limits
-    Sys.sleep(counter $period)
+count <- function(counter) { # schedule and ensure api calls remain within minute and daily limits
+    Sys.sleep(counter $period) # wait for sample period
     counter $period <- 0
-    repeat if(H<strftime(Sys.time(), '%H')) Sys.sleep(600) # wait till start hour
+    repeat{
+        if(H<as.numeric(strftime(Sys.time(), '%H'))) break # wait till start hour
+        Sys.sleep(600)
+    }
     repeat{
         d <- format(Sys.Date(), tz='America/New_York')
         if(counter $date!=d) {
@@ -46,17 +50,17 @@ count <- function(counter) { # ensures api calls remain within minute and daily 
             counter $date <- d
         }
         if(counter $count<DAILYCOUNT) break # daily limits
-        Sys.sleep(600) # wait 10 minutes
+        Sys.sleep(600)
     }
-    Sys.sleep(60/MINUTECOUNT)               # minute limits
+    Sys.sleep(61/MINUTECOUNT) # minute limits
     counter $count <- counter $count + 1
     counter
 }
 
 
 counter <- list(count=0, period=0, date=format(Sys.Date(), tz='America/New_York'))
+s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
 repeat{
-    s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
     ## if(any(s %in% OCONUS)) next
     geolookups <- lapply(zctaRel[zctaRel $GEOID==s, ] $ZCTA5, function(query) {
         counter <- count(counter)
@@ -80,14 +84,15 @@ repeat{
     geolookups $cluster <- as.factor(m $classification)
     geolookups $grid <- as.factor(unlist(st_intersects(geolookups, st_make_grid(geolookups, 0.01))))
     geolookups $strata <- with(geolookups, cluster:grid)
-    s <- unlist(with(geolookups, tapply(id, strata, sample, 1, simplify=FALSE)))    
     dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
     dir.create(dirname)
-    for(query in s) {
+    stations <- unlist(with(geolookups, tapply(id, strata, sample, 1, simplify=FALSE)))
+    for(station in stations) {
         counter <- count(counter)
-        wuUrn <- WUpath(wuKey, 'conditions', paste('pws', query, sep=':'), 'json')
-        write_json(toJSON(GETjson(wuUrl, wuUrn)), file.path(dirname, paste0(query, '.json')))
+        wuUrn <- WUpath(wuKey, 'conditions', paste('pws', station, sep=':'), 'json')
+        write_json(toJSON(GETjson(wuUrl, wuUrn)), file.path(dirname, paste0(station, '.json')))
     }
+    if(SAMPLECO) s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
     counter $period <- PERIOD # reset sample period
 }
 
