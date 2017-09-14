@@ -5,11 +5,11 @@ library(sf)
 library(sp)
 
 
-DATADIR <- 'json' # file.path('E:', 'data', 'wu')
+DATADIR <- 'json'
 ##          outside us , NY:=005, PR & USVI  , AP         , pacific    , AS
 OCONUS <- c(00100:00499,          00600:00999, 96200:96699, 96900:96999, 96799)
 
-DAILYCOUNT <- 100
+DAILYCOUNT <- 500
 MINUTECOUNT <- 10
 PERIOD <- 7200    # sample period in seconds
 SLEEP <- 600      # sleep period in seconds
@@ -59,8 +59,8 @@ count <- function(counter) { # schedule and ensure api calls remain within minut
 
 
 counter <- list(count=0, period=0, date=format(Sys.Date(), tz='America/New_York'))
-s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
 repeat{
+    s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
     ## if(any(s %in% OCONUS)) next
     geolookups <- lapply(zctaRel[zctaRel $GEOID==s, ] $ZCTA5, function(query) {
         counter <- count(counter)
@@ -86,14 +86,16 @@ repeat{
     geolookups $strata <- with(geolookups, cluster:grid)
     dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
     dir.create(dirname)
-    stations <- unlist(with(geolookups, tapply(id, strata, sample, 1, simplify=FALSE)))
-    for(station in stations) {
-        counter <- count(counter)
-        wuUrn <- WUpath(wuKey, 'conditions', paste('pws', station, sep=':'), 'json')
-        write_json(toJSON(GETjson(wuUrl, wuUrn)), file.path(dirname, paste0(station, '.json')))
+    repeat{
+        stations <- unlist(with(geolookups, tapply(id, strata, sample, 1, simplify=FALSE)))
+        for(station in sample(stations)) { # default sample reorders
+            counter <- count(counter)
+            wuUrn <- WUpath(wuKey, 'conditions', paste('pws', station, sep=':'), 'json')
+            write_json(toJSON(GETjson(wuUrl, wuUrn)), file.path(dirname, paste0(station, '.json')))
+        }
+        counter $period <- PERIOD # reset sample period
+        if(SAMPLECO) break # sample next county
     }
-    if(SAMPLECO) s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
-    counter $period <- PERIOD # reset sample period
 }
 
 ## sampleRunTime <- length(s) * (60/MINUTECOUNT) # time-to-sample estimate
