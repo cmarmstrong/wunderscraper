@@ -58,7 +58,11 @@ count <- function(counter) { # schedule and ensure api calls remain within minut
 }
 
 
-counter <- list(count=0, period=0, date=format(Sys.Date(), tz='America/New_York'))
+## use an environment for reference semantics
+counter <- new.env()
+counter $count <- 0
+counter $period <- 0
+counter $date=format(Sys.Date(), tz='America/New_York')
 
 
 main <- function(counter) {
