@@ -11,9 +11,7 @@ OCONUS <- c(00100:00499,          00600:00999, 96200:96699, 96900:96999, 96799)
 
 DAILYCOUNT <- 500
 MINUTECOUNT <- 10
-PERIOD <- 2       # sample period in hours
 SLEEP <- 600      # sleep period in seconds
-H <- 5            # start hour
 SAMPLECO <- FALSE # if false: resample same county
 
 wuKey <- readRDS('resources/key.rds')
@@ -55,7 +53,7 @@ set.scheduler <- function(scheduler, times, format) {
 
 schedule <- function(scheduler) { # schedule and ensure api calls remain within minute and daily limits
     repeat{
-        if(scheduler $schedule[[1]]<Sys.time()) break # wait till start time
+        if(scheduler $schedule[1]<Sys.time()) break # wait till start time
         Sys.sleep(600)
     }
     repeat{
@@ -71,7 +69,6 @@ schedule <- function(scheduler) { # schedule and ensure api calls remain within 
     }
     Sys.sleep(61/MINUTECOUNT) # minute limits
     scheduler $count <- scheduler $count + 1
-    scheduler
 }
 
 
@@ -80,7 +77,7 @@ main <- function(scheduler) {
         s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
         ## if(any(s %in% OCONUS)) next
         geolookups <- lapply(zctaRel[zctaRel $GEOID==s, ] $ZCTA5, function(query) {
-            scheduler <- schedule(scheduler)
+            schedule(scheduler)
             GETjson(wuUrl, WUpath(wuKey, 'geolookup', query, 'json'))
         })
         geolookups <- lapply(geolookups, function(zcta) {
@@ -106,12 +103,12 @@ main <- function(scheduler) {
         repeat{
             stations <- unlist(with(geolookups, tapply(id, strata, sample, 1, simplify=FALSE)))
             for(station in sample(stations)) { # default sample reorders
-                scheduler <- schedule(scheduler)
+                schedule(scheduler)
                 wuUrn <- WUpath(wuKey, 'conditions', paste('pws', station, sep=':'), 'json')
                 write_json(toJSON(GETjson(wuUrl, wuUrn)),
                            file.path(dirname, paste0(station, '-', as.integer(Sys.time()), '.json')))
             }
-            scheduler <- clean.scheduler(scheduler)
+            clean.scheduler(scheduler)
             if(SAMPLECO) break # sample next county
         }
     }
