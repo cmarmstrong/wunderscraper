@@ -11,7 +11,7 @@ OCONUS <- c(00100:00499,          00600:00999, 96200:96699, 96900:96999, 96799)
 
 DAILYCOUNT <- 500
 MINUTECOUNT <- 10
-PERIOD <- 7200    # sample period in seconds
+PERIOD <- 2       # sample period in hours
 SLEEP <- 600      # sleep period in seconds
 H <- 5            # start hour
 SAMPLECO <- FALSE # if false: resample same county
@@ -36,41 +36,51 @@ WUpath <- function(key, feature, id, format) {
     paste(paste('api', key, feature, 'q', id, sep='/'), format, sep='.')
 }
 
-count <- function(counter) { # schedule and ensure api calls remain within minute and daily limits
-    Sys.sleep(counter $period) # wait for sample period
-    counter $period <- 0
+make.scheduler <- function() {
+    e <- new.env() # environment for reference semantics
+    e $count <- 0
+    e $date=format(Sys.Date(), tz='America/New_York')
+    e
+}
+
+clean.scheduler <- function(scheduler) scheduler $schedule <- with(scheduler, schedule[schedule>Sys.time()])
+
+set.scheduler <- function(scheduler, times, format) {
+    ## format uses only daily formats--no days weeks years
+    ## times are sorted
+    scheduler $times <- times
+    scheduler $format <- format
+    scheduler $schedule <- strptime(scheduler $times, scheduler $format)
+}
+
+schedule <- function(scheduler) { # schedule and ensure api calls remain within minute and daily limits
     repeat{
-        if(H<as.numeric(strftime(Sys.time(), '%H'))) break # wait till start hour
+        if(scheduler $schedule[[1]]<Sys.time()) break # wait till start time
         Sys.sleep(600)
     }
     repeat{
         d <- format(Sys.Date(), tz='America/New_York')
-        if(counter $date!=d) {
-            counter $count <- 0
-            counter $date <- d
+        if(scheduler $date<d) {
+            scheduler $count <- 0
+            scheduler $date <- d
+            scheduler $schedule <- strptime(schedule $times, schedule $format)
+            scheduler <- clean.scheduler(scheduler)
         }
-        if(counter $count<DAILYCOUNT) break # daily limits
+        if(scheduler $count<DAILYCOUNT) break # daily limits
         Sys.sleep(600)
     }
     Sys.sleep(61/MINUTECOUNT) # minute limits
-    counter $count <- counter $count + 1
-    counter
+    scheduler $count <- scheduler $count + 1
+    scheduler
 }
 
 
-## use an environment for reference semantics
-counter <- new.env()
-counter $count <- 0
-counter $period <- 0
-counter $date=format(Sys.Date(), tz='America/New_York')
-
-
-main <- function(counter) {
+main <- function(scheduler) {
     repeat{
         s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
         ## if(any(s %in% OCONUS)) next
         geolookups <- lapply(zctaRel[zctaRel $GEOID==s, ] $ZCTA5, function(query) {
-            counter <- count(counter)
+            scheduler <- schedule(scheduler)
             GETjson(wuUrl, WUpath(wuKey, 'geolookup', query, 'json'))
         })
         geolookups <- lapply(geolookups, function(zcta) {
@@ -96,12 +106,12 @@ main <- function(counter) {
         repeat{
             stations <- unlist(with(geolookups, tapply(id, strata, sample, 1, simplify=FALSE)))
             for(station in sample(stations)) { # default sample reorders
-                counter <- count(counter)
+                scheduler <- schedule(scheduler)
                 wuUrn <- WUpath(wuKey, 'conditions', paste('pws', station, sep=':'), 'json')
                 write_json(toJSON(GETjson(wuUrl, wuUrn)),
                            file.path(dirname, paste0(station, '-', as.integer(Sys.time()), '.json')))
             }
-            counter $period <- PERIOD # reset sample period
+            scheduler <- clean.scheduler(scheduler)
             if(SAMPLECO) break # sample next county
         }
     }
