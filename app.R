@@ -11,8 +11,10 @@ OCONUS <- c(00100:00499,          00600:00999, 96200:96699, 96900:96999, 96799)
 
 DAILYCOUNT <- 500
 MINUTECOUNT <- 10
-SLEEP <- 600      # sleep period in seconds
+SLEEP <- 60       # sleep period in seconds
 SAMPLECO <- FALSE # if false: resample same county
+
+FORMAT <- '%H %M' # internal DateTime format
 
 wuKey <- readRDS('resources/key.rds')
 wuUrl <- 'http://api.wunderground.com'
@@ -57,12 +59,9 @@ check.scheduler <- function(scheduler) ls.str(scheduler)
 
 clean.scheduler <- function(scheduler) scheduler $schedule <- with(scheduler, schedule[schedule>Sys.time()])
 
-plan.scheduler <- function(scheduler, times, format) {
-    ## format uses only daily formats--no days weeks years
-    ## times are sorted
-    scheduler $times <- times
-    scheduler $format <- format
-    scheduler $schedule <- strptime(scheduler $times, scheduler $format)
+plan.scheduler <- function(scheduler, ...) { # convenience wrapper around seq.POSIXt
+    scheduler $schedule <- seq(strptime(0, '%H'), strptime(23, '%H'), ...)
+    scheduler $times <- strftime(scheduler $schedule, FORMAT)
 }
 
 schedule.scheduler <- function(scheduler) { # schedule and ensure api calls remain within minute and daily limits
@@ -75,7 +74,7 @@ schedule.scheduler <- function(scheduler) { # schedule and ensure api calls rema
         if(scheduler $date<d) {
             scheduler $count <- 0
             scheduler $date <- d
-            scheduler $schedule <- strptime(scheduler $times, scheduler $format)
+            scheduler $schedule <- strptime(scheduler $times, FORMAT)
             scheduler <- clean(scheduler)
         }
         if(scheduler $count<DAILYCOUNT) break # daily limits
@@ -132,3 +131,6 @@ main <- function(scheduler) {
 ## sampleRunTime <- length(s) * (60/MINUTECOUNT) # time-to-sample estimate
 ## dailyRemaining <- DAILYCOUNT - counter $count
 ## strataT <- dailyRemaining / sampleRunTime    
+
+## plan(scheduler, 0:23, '%H')
+## 
