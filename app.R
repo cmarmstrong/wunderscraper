@@ -30,20 +30,34 @@ GETjson <- function(url, path) {
     fromJSON(rawToChar(response $content))
 }
 
-WUpath <- function(key, feature, id, format) {
+wuPath <- function(key, feature, id, format) {
     paste(paste('api', key, feature, 'q', id, sep='/'), format, sep='.')
 }
 
-make.scheduler <- function() {
-    e <- new.env() # environment for reference semantics
+scheduler <- function() {
+    e <- structure(new.env(), class='scheduler') # use environment for reference semantics
     e $count <- 0
     e $date=format(Sys.Date(), tz='America/New_York')
     e
 }
 
+## generic functions
+check <- function(x) UseMethod('check')
+clean <- function(x) UseMethod('clean')
+plan <- function(x, ...) UseMethod('plan')
+schedule <- function(x) UseMethod('schedule')
+## default methods
+check.default <- function(x) warning(paste0('get cannot handle class ', class(x)))
+clean.default <- function(x) warning(paste0('clean cannot handle class ', class(x)))
+plan.default <- function(x) warning(paste0('set cannot handle class ', class(x)))
+schedule.default <- function(x) warning(paste0('schedule cannot handle class ', class(x)))
+
+## scheduler methods
+check.scheduler <- function(scheduler) ls.str(scheduler)
+
 clean.scheduler <- function(scheduler) scheduler $schedule <- with(scheduler, schedule[schedule>Sys.time()])
 
-set.scheduler <- function(scheduler, times, format) {
+plan.scheduler <- function(scheduler, times, format) {
     ## format uses only daily formats--no days weeks years
     ## times are sorted
     scheduler $times <- times
@@ -51,7 +65,7 @@ set.scheduler <- function(scheduler, times, format) {
     scheduler $schedule <- strptime(scheduler $times, scheduler $format)
 }
 
-schedule <- function(scheduler) { # schedule and ensure api calls remain within minute and daily limits
+schedule.scheduler <- function(scheduler) { # schedule and ensure api calls remain within minute and daily limits
     repeat{
         if(scheduler $schedule[1]<Sys.time()) break # wait till start time
         Sys.sleep(600)
@@ -61,8 +75,8 @@ schedule <- function(scheduler) { # schedule and ensure api calls remain within 
         if(scheduler $date<d) {
             scheduler $count <- 0
             scheduler $date <- d
-            scheduler $schedule <- strptime(schedule $times, schedule $format)
-            scheduler <- clean.scheduler(scheduler)
+            scheduler $schedule <- strptime(scheduler $times, scheduler $format)
+            scheduler <- clean(scheduler)
         }
         if(scheduler $count<DAILYCOUNT) break # daily limits
         Sys.sleep(600)
@@ -72,13 +86,14 @@ schedule <- function(scheduler) { # schedule and ensure api calls remain within 
 }
 
 
+## main
 main <- function(scheduler) {
     repeat{
         s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
         ## if(any(s %in% OCONUS)) next
         geolookups <- lapply(zctaRel[zctaRel $GEOID==s, ] $ZCTA5, function(query) {
             schedule(scheduler)
-            GETjson(wuUrl, WUpath(wuKey, 'geolookup', query, 'json'))
+            GETjson(wuUrl, wuPath(wuKey, 'geolookup', query, 'json'))
         })
         geolookups <- lapply(geolookups, function(zcta) {
             if(!is.null(zcta $response $error)) return(NA)
@@ -108,7 +123,7 @@ main <- function(scheduler) {
                 write_json(toJSON(GETjson(wuUrl, wuUrn)),
                            file.path(dirname, paste0(station, '-', as.integer(Sys.time()), '.json')))
             }
-            clean.scheduler(scheduler)
+            clean(scheduler)
             if(SAMPLECO) break # sample next county
         }
     }
