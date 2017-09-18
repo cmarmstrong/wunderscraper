@@ -118,7 +118,7 @@ main <- function(scheduler) {
             stations <- unlist(with(geolookups, tapply(id, strata, sample, 1, simplify=FALSE)))
             for(station in sample(stations)) { # default sample reorders
                 schedule(scheduler)
-                wuUrn <- WUpath(wuKey, 'conditions', paste('pws', station, sep=':'), 'json')
+                wuUrn <- wuPath(wuKey, 'conditions', paste('pws', station, sep=':'), 'json')
                 write_json(toJSON(GETjson(wuUrl, wuUrn)),
                            file.path(dirname, paste0(station, '-', as.integer(Sys.time()), '.json')))
             }
@@ -127,10 +127,3 @@ main <- function(scheduler) {
         }
     }
 }
-
-## sampleRunTime <- length(s) * (60/MINUTECOUNT) # time-to-sample estimate
-## dailyRemaining <- DAILYCOUNT - counter $count
-## strataT <- dailyRemaining / sampleRunTime    
-
-## plan(scheduler, 0:23, '%H')
-## 
