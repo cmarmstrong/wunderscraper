@@ -14,8 +14,6 @@ MINUTECOUNT <- 10
 SLEEP <- 60       # sleep period in seconds
 SAMPLECO <- FALSE # if false: resample same county
 
-FORMAT <- '%H %M' # internal DateTime format
-
 wuKey <- readRDS('resources/key.rds')
 wuUrl <- 'http://api.wunderground.com'
 wsg84String <- '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'
@@ -45,40 +43,41 @@ scheduler <- function() {
 
 ## generic functions
 check <- function(x) UseMethod('check')
-clean <- function(x) UseMethod('clean')
 plan <- function(x, ...) UseMethod('plan')
+sync <- function(x) UseMethod('sync')
 schedule <- function(x) UseMethod('schedule')
 ## default methods
-check.default <- function(x) warning(paste0('get cannot handle class ', class(x)))
-clean.default <- function(x) warning(paste0('clean cannot handle class ', class(x)))
-plan.default <- function(x) warning(paste0('set cannot handle class ', class(x)))
+check.default <- function(x) warning(paste0('check cannot handle class ', class(x)))
+plan.default <- function(x) warning(paste0('plan cannot handle class ', class(x)))
+sync.default <- function(x) warning(paste0('sync cannot handle class ', class(x)))
 schedule.default <- function(x) warning(paste0('schedule cannot handle class ', class(x)))
 
 ## scheduler methods
 check.scheduler <- function(scheduler) ls.str(scheduler)
 
-clean.scheduler <- function(scheduler) scheduler $schedule <- with(scheduler, schedule[schedule>Sys.time()])
-
 plan.scheduler <- function(scheduler, ...) { # convenience wrapper around seq.POSIXt
     scheduler $schedule <- seq(strptime(0, '%H'), strptime(23, '%H'), ...)
-    scheduler $times <- strftime(scheduler $schedule, FORMAT)
+}
+
+sync.scheduler <- function(scheduler) {
+    scheduler $now <- Sys.time()
+    scheduler $schedule <- with(scheduler, c(schedule[schedule>now], schedule[schedule<=now]))
 }
 
 schedule.scheduler <- function(scheduler) { # schedule and ensure api calls remain within minute and daily limits
     repeat{
         if(scheduler $schedule[1]<Sys.time()) break # wait till start time
-        Sys.sleep(600)
+        Sys.sleep(SLEEP)
     }
     repeat{
         d <- format(Sys.Date(), tz='America/New_York')
         if(scheduler $date<d) {
             scheduler $count <- 0
             scheduler $date <- d
-            scheduler $schedule <- strptime(scheduler $times, FORMAT)
-            scheduler <- clean(scheduler)
+            scheduler <- sync(scheduler)
         }
         if(scheduler $count<DAILYCOUNT) break # daily limits
-        Sys.sleep(600)
+        Sys.sleep(SLEEP)
     }
     Sys.sleep(61/MINUTECOUNT) # minute limits
     scheduler $count <- scheduler $count + 1
@@ -122,7 +121,7 @@ main <- function(scheduler) {
                 write_json(toJSON(GETjson(wuUrl, wuUrn)),
                            file.path(dirname, paste0(station, '-', as.integer(Sys.time()), '.json')))
             }
-            clean(scheduler)
+            sync(scheduler)
             if(SAMPLECO) break # sample next county
         }
     }
