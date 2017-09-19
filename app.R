@@ -74,7 +74,7 @@ schedule.scheduler <- function(scheduler) { # schedule and ensure api calls rema
         if(scheduler $date<d) {
             scheduler $count <- 0
             scheduler $date <- d
-            scheduler <- sync(scheduler)
+            sync(scheduler)
         }
         if(scheduler $count<DAILYCOUNT) break # daily limits
         Sys.sleep(SLEEP)
