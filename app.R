@@ -34,26 +34,44 @@ wuPath <- function(key, feature, id, format) {
     paste(paste('api', key, feature, 'q', id, sep='/'), format, sep='.')
 }
 
-scheduler <- function() {
+counter <- function() {
+    e <- structure(new.env(), class='counter')
+    e $n <- 0
+    e
+}
+    
+scheduler <- function(counter) {
     e <- structure(new.env(), class='scheduler') # use environment for reference semantics
-    e $count <- 0
     e $date=format(Sys.Date(), tz='America/New_York')
+    e $counter <- counter
     e
 }
 
-## generic functions
+### generic functions
+## scheduler
 check <- function(x) UseMethod('check')
 plan <- function(x, ...) UseMethod('plan')
 sync <- function(x) UseMethod('sync')
 schedule <- function(x) UseMethod('schedule')
+## counter
+increment <- function(x) UseMethod('increment')
+
 ## default methods
-check.default <- function(x) warning(paste0('check cannot handle class ', class(x)))
-plan.default <- function(x) warning(paste0('plan cannot handle class ', class(x)))
-sync.default <- function(x) warning(paste0('sync cannot handle class ', class(x)))
-schedule.default <- function(x) warning(paste0('schedule cannot handle class ', class(x)))
+default <- function(x) function(y) warning(paste0(x, ' cannot handle class ', class(y)))
+check.default <- default('check')
+plan.default <- default('plan')
+sync.default <- default('sync')
+schedule.default <- default('schedule')
+increment.default <- default('increment')
+## check.default <- function(x) warning(paste0('check cannot handle class ', class(x)))
+## plan.default <- function(x) warning(paste0('plan cannot handle class ', class(x)))
+## sync.default <- function(x) warning(paste0('sync cannot handle class ', class(x)))
+## schedule.default <- function(x) warning(paste0('schedule cannot handle class ', class(x)))
+## increment.default <- function(x) warning(paste0('increment cannot handle class ', class(x)))
 
 ## scheduler methods
 check.scheduler <- function(scheduler) ls.str(scheduler)
+check.counter <- function(counter) ls.str(counter)
 
 plan.scheduler <- function(scheduler, ...) { # convenience wrapper around seq.POSIXt
     scheduler $schedule <- seq(strptime(0, '%H'), strptime(23, '%H'), ...)
@@ -72,16 +90,19 @@ schedule.scheduler <- function(scheduler) { # schedule and ensure api calls rema
     repeat{
         d <- format(Sys.Date(), tz='America/New_York')
         if(scheduler $date<d) {
-            scheduler $count <- 0
+            counter $n <- 0
             scheduler $date <- d
             sync(scheduler)
         }
-        if(scheduler $count<DAILYCOUNT) break # daily limits
+        if(counter $n<DAILYCOUNT) break # daily limits
         Sys.sleep(SLEEP)
     }
     Sys.sleep(61/MINUTECOUNT) # minute limits
-    scheduler $count <- scheduler $count + 1
+    increment(counter)
 }
+
+## counter methods
+increment.counter <- function(counter) counter $n <- counter $n + 1
 
 
 ## main
