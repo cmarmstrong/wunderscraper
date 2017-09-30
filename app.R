@@ -56,6 +56,7 @@ schedule <- function(x) UseMethod('schedule')
 ## counter
 increment <- function(x) UseMethod('increment')
 
+### methods
 ## default methods
 default <- function(x) function(y) warning(paste0(x, ' cannot handle class ', class(y)))
 check.default <- default('check')
@@ -63,11 +64,6 @@ plan.default <- default('plan')
 sync.default <- default('sync')
 schedule.default <- default('schedule')
 increment.default <- default('increment')
-## check.default <- function(x) warning(paste0('check cannot handle class ', class(x)))
-## plan.default <- function(x) warning(paste0('plan cannot handle class ', class(x)))
-## sync.default <- function(x) warning(paste0('sync cannot handle class ', class(x)))
-## schedule.default <- function(x) warning(paste0('schedule cannot handle class ', class(x)))
-## increment.default <- function(x) warning(paste0('increment cannot handle class ', class(x)))
 
 ## scheduler methods
 check.scheduler <- function(scheduler) ls.str(scheduler)
@@ -90,15 +86,15 @@ schedule.scheduler <- function(scheduler) { # schedule and ensure api calls rema
     repeat{
         d <- format(Sys.Date(), tz='America/New_York')
         if(scheduler $date<d) {
-            counter $n <- 0
+            scheduler $counter $n <- 0
             scheduler $date <- d
             sync(scheduler)
         }
-        if(counter $n<DAILYCOUNT) break # daily limits
+        if(scheduler $counter $n<DAILYCOUNT) break # daily limits
         Sys.sleep(SLEEP)
     }
     Sys.sleep(61/MINUTECOUNT) # minute limits
-    increment(counter)
+    increment(scheduler $counter)
 }
 
 ## counter methods
@@ -106,7 +102,7 @@ increment.counter <- function(counter) counter $n <- counter $n + 1
 
 
 ## main
-main <- function(scheduler) {
+main <- function(scheduler, sampleStrata=quote(cluster:grid)) {
     repeat{
         s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
         ## if(any(s %in% OCONUS)) next
@@ -131,7 +127,7 @@ main <- function(scheduler) {
         m <- Mclust(st_coordinates(geolookups), modelNames='VII')
         geolookups $cluster <- as.factor(m $classification)
         geolookups $grid <- as.factor(unlist(st_intersects(geolookups, st_make_grid(geolookups, 0.01))))
-        geolookups $strata <- with(geolookups, cluster:grid)
+        geolookups $strata <- with(geolookups, sampleStrata)
         dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
         dir.create(dirname)
         repeat{
