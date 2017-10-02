@@ -12,7 +12,6 @@ OCONUS <- c(00100:00499,          00600:00999, 96200:96699, 96900:96999, 96799)
 DAILYCOUNT <- 500
 MINUTECOUNT <- 10
 SLEEP <- 60       # sleep period in seconds
-SAMPLECO <- FALSE # if false: resample same county
 
 wuKey <- readRDS('resources/key.rds')
 wuUrl <- 'http://api.wunderground.com'
@@ -21,7 +20,7 @@ wsg84String <- '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'
 ## zcta <- st_read('resources/cb_2016_us_zcta510_500k')
 co <- st_read('resources/cb_2016_us_county_500k')
 zctaRel <- read.csv('resources/zcta_county_rel_10.txt', colClasses=c(ZCTA5='character', STATE='character', COUNTY='character', GEOID='character'))
-coRel <- zctaRel[!duplicated(zctaRel $GEOID), c('ZCTA5', 'GEOID', 'COPOP')]
+coRel <- zctaRel[!duplicated(zctaRel $GEOID), c('ZCTA5', 'GEOID', 'COPOP', 'COAREA', 'COAREALAND')]
 
 
 ## functions
@@ -40,7 +39,7 @@ counter <- function() {
     e
 }
     
-scheduler <- function(counter) {
+scheduler <- function(counter=counter()) {
     e <- structure(new.env(), class='scheduler') # use environment for reference semantics
     e $date=format(Sys.Date(), tz='America/New_York')
     e $counter <- counter
@@ -102,9 +101,9 @@ increment.counter <- function(counter) counter $n <- counter $n + 1
 
 
 ## main
-main <- function(scheduler, sampleStrata=quote(cluster:grid)) {
+main <- function(scheduler, sampleCo=FALSE, sampleProb='COPOP', sampleStrata='cluster:grid') {
     repeat{
-        s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel $COPOP)
+        s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel[, sampleProb, drop=TRUE)
         ## if(any(s %in% OCONUS)) next
         geolookups <- lapply(zctaRel[zctaRel $GEOID==s, ] $ZCTA5, function(query) {
             schedule(scheduler)
@@ -120,14 +119,14 @@ main <- function(scheduler, sampleStrata=quote(cluster:grid)) {
                        ## ZCTA5=z)) # zcta is unecessary
         })
         geolookups <- do.call(rbind, geolookups[!is.na(geolookups)])
-        geolookups <- geolookups[!duplicated(geolookups $id), ]
+        geolookups <- geolookups[!duplicated(geolookups $id), ] ## remove duplicate stations
         st_crs(geolookups) <- 4326 ## WU in 4326
         geolookups <- st_transform(geolookups, st_crs(co))
         geolookups <- st_intersection(geolookups, co[co $GEOID==s, ])
         m <- Mclust(st_coordinates(geolookups), modelNames='VII')
         geolookups $cluster <- as.factor(m $classification)
         geolookups $grid <- as.factor(unlist(st_intersects(geolookups, st_make_grid(geolookups, 0.01))))
-        geolookups $strata <- with(geolookups, sampleStrata)
+        geolookups $strata <- with(geolookups, eval(parse(text=sampleStrata)))
         dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
         dir.create(dirname)
         repeat{
@@ -139,7 +138,7 @@ main <- function(scheduler, sampleStrata=quote(cluster:grid)) {
                            file.path(dirname, paste0(station, '-', as.integer(Sys.time()), '.json')))
             }
             sync(scheduler)
-            if(SAMPLECO) break # sample next county
+            if(sampleCo) break # sample next county
         }
     }
 }
