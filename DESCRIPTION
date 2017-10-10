@@ -1,0 +1,22 @@
+Package: wunderscraper
+Title: Scrape Wunderground API
+Version: 0.0.0.9000
+Authors@R: person("Chandler", "Armstrong", email = "omni.armstrong@gmail.com",
+                  role = c("aut", "cre"))
+Description: Scrape Wunderground API.  Provides multistage sampling strategies,
+    respects API usage limits, and quietly collects and saves Wunderground data
+    in the background.
+Depends: R (>= 3.4.1)
+Imports:
+    httr,
+    jsonlite,
+    sf,
+    tigris
+Suggests: Mclust
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Suggests: knitr,
+    rmarkdown,
+    testthat
+VignetteBuilder: knitr
