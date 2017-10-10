@@ -12,9 +12,6 @@ setApiKey <- function(key) {
     TRUE
 }
 
-#' Get API key
-#'
-#' Returns the value of the API key set by setApiKey
 .getApiKey <- function() {
     if(identical(key <- Sys.getenv('WUNDERSCRAPER_KEY'), '')) stop('use setApiKey to set key (see ?setApiKey)')
     key

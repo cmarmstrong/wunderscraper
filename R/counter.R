@@ -1,4 +1,8 @@
-#' 
+#' Counter
+#'
+#' Counts API calls and tracks limits
+#'
+#' @param plan API usage plan
 counter <- function(plan='developer') {
     e <- structure(new.env(), class='counter')
     e $n <- 0
