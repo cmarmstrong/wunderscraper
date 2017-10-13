@@ -1,25 +1,59 @@
-## setup
-.onLoad <- function(libname, pkgname) {
-    ##             outside us , NY:=005, PR & USVI  , AP         , pacific    , AS
-    ## OCONUS <- c(00100:00499,          00600:00999, 96200:96699, 96900:96999, 96799)
-    Sys.setenv(paste0('WUNDERSCRAPER_', c('SLEEP', 'URL', 'WSG84_PROJ'))
-               c(60,                            # sleep time in seconds after failed scheduling
-                 'http://api.wunderground.com', # API URL
-                 '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'))
-}
-
-## internal functions
-.GETjson <- function(url, path) {
-    response <- GET(url=url, path=path)
-    fromJSON(rawToChar(response $content))
-}
-
-.wuPath <- function(key, feature, id, format) {
-    paste(paste('api', key, feature, 'q', id, sep='/'), format, sep='.')
-}
-
-
-## main
+#' Scrape wunderground API
+#'
+#' Uses a sampling strategy to scrape wunderground API.
+#'
+#' Wunderscraper scrapes wunderground API with a user provided sampling strategy.
+#' The sampling strategy has two components:
+#' \enumerate{
+#'   \item A sampling frame defining the spatial area or units from which a sample
+#'    will be taken.
+#'   \item A possibly multistage sampling strategy for selecting weather stations
+#'    within the spatial sampling frame.
+#' }
+#'
+#' The sampling strategy has one constraint:
+#' \enumerate{
+#'   \item The sampling stages must, at some point, involve at least one of:
+#'     zip code, city name, or latitude/longitude
+#'     This is because these are the units by which the wunderground API looks up
+#'     weather stations within a spatial area.
+#'  }
+#' Stages before and after Wunderground's lookup may consist of any spatial unit
+#' the user deems desirable.  Wunderscraper has built in support for sampling by
+#' counties or states prior to the Wunderground lookup, and for sampling by grid
+#' and spatial cluster after the Wunderground lookup.  Using administrative
+#' boundaries to sample to the step of Wunderground's lookup is convenient due
+#' to their large size and, occasionally, coincidence with geographic features.
+#' Users may opt for grid-sampling througout all sample stages, or use smaller
+#' vector-based boundaries for sampling from weather stations after
+#' Wunderground's lookup--eg streets or neighborhood boundaries.
+#'
+#' Sampling strategies can also use a variable for weighting the sample
+#' probabilities.  Wunderscraper provides state and county populations and land
+#' areas.  If using a grid-based sampling strategy, then Landscan
+#' \url{http://web.ornl.gov/sci/landscan/} or Gridded Population of the World
+#' \url{http://sedac.ciesin.columbia.edu/data/collection/gpw-v4} can provide
+#' population rasters at about a 1km resolution.
+#'
+#' @param scheduler A scheduler object.
+#' @param weight A variable for weighting sample probabilities.
+#' @param strata A character string of colon-seperated variable names indicating
+#'   sampling stages.  Wunderscraper infers multistage nesting?
+#' @param dat A dataframe relating spatial sampling strata to each other and to
+#'   the variable in weight
+#' 
+#' @return Wunderscraper may output the data directly to a file or to standard
+#'   out.  The output can be the JSON payload as recieved from Wunderground, or
+#'   converted to a dataframe, with each complete sample comprising one
+#'   dataframe, and each dataframe saved in rds format.  Whether in rds or json,
+#'   all file output is named by the selected sampling units and date in epoch
+#'   time.  Wunderscraper will collect data indefinitely or until it meets a
+#'   user specified time or sampling quota.  Wunderscraper returns TRUE if it
+#'   finishes normally, else FALSE.
+#' @examples
+#' \dontrun{
+#' wunderscraper(scheduler(), weight='COPOP', strata='cluster:grid', o='json')
+#' }
 wunderscraper <- function(scheduler, sampleCo=FALSE, sampleProb='COPOP', sampleStrata='cluster:grid', o='json') {
     ## expose sampling frame
     repeat{
