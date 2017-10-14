@@ -35,13 +35,13 @@
 #' \url{http://sedac.ciesin.columbia.edu/data/collection/gpw-v4} can provide
 #' population rasters at about a 1km resolution.
 #'
+#' @seealso \code{\link[rwunderground]}
 #' @param scheduler A scheduler object.
 #' @param weight A variable for weighting sample probabilities.
 #' @param strata A character string of colon-seperated variable names indicating
 #'   sampling stages.  Wunderscraper infers multistage nesting?
 #' @param dat A dataframe relating spatial sampling strata to each other and to
 #'   the variable in weight
-#' 
 #' @return Wunderscraper may output the data directly to a file or to standard
 #'   out.  The output can be the JSON payload as recieved from Wunderground, or
 #'   converted to a dataframe, with each complete sample comprising one
@@ -54,6 +54,7 @@
 #' \dontrun{
 #' wunderscraper(scheduler(), weight='COPOP', strata='cluster:grid', o='json')
 #' }
+#' @export
 wunderscraper <- function(scheduler, sampleCo=FALSE, sampleProb='COPOP', sampleStrata='cluster:grid', o='json') {
     ## expose sampling frame
     repeat{
@@ -69,7 +70,8 @@ wunderscraper <- function(scheduler, sampleCo=FALSE, sampleProb='COPOP', sampleS
             if(!is.null(zcta $response $error)) return(NA)
             ## z <- zcta $location $zip
             with(zcta $location $nearby_weather_stations $pws $station,
-                 st_sf(geometry=st_cast(st_sfc(st_multipoint(matrix(c(lon, lat), ncol=2))), 'POINT'),
+                 st_sf(geometry=st_cast(st_sfc(st_multipoint(
+                           matrix(c(lon, lat), ncol=2))), 'POINT'),
                        id=id,
                        stringsAsFactors=FALSE)) # ,
                        ## ZCTA5=z)) # zcta is unecessary
@@ -81,17 +83,21 @@ wunderscraper <- function(scheduler, sampleCo=FALSE, sampleProb='COPOP', sampleS
         geolookups <- st_intersection(geolookups, co[co $GEOID==s, ])
         m <- Mclust(st_coordinates(geolookups), modelNames='VII')
         geolookups $cluster <- as.factor(m $classification)
-        geolookups $grid <- as.factor(unlist(st_intersects(geolookups, st_make_grid(geolookups, 0.01))))
+        geolookups $grid <- as.factor(unlist(
+            st_intersects(geolookups, st_make_grid(geolookups, 0.01))))
         geolookups $strata <- with(geolookups, eval(parse(text=sampleStrata)))
         dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
         dir.create(dirname)
         repeat{
-            stations <- unlist(with(geolookups, tapply(id, strata, sample, 1, simplify=FALSE)))
+            stations <- unlist(with(geolookups,
+                                    tapply(id, strata, sample, 1, simplify=FALSE)))
             for(station in sample(stations)) { # default sample reorders
                 schedule(scheduler)
-                wuUrn <- wuPath(wuKey, 'conditions', paste('pws', station, sep=':'), 'json')
+                wuUrn <- wuPath(
+                    wuKey, 'conditions', paste('pws', station, sep=':'), 'json')
                 write_json(toJSON(GETjson(wuUrl, wuUrn)),
-                           file.path(dirname, paste0(station, '-', as.integer(Sys.time()), '.json')))
+                           file.path(dirname,
+                                     paste0(station, '-', as.integer(Sys.time()), '.json')))
             }
             sync(scheduler)
             if(sampleCo) break # sample next county

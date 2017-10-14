@@ -3,9 +3,9 @@
 #' Sets the API key to the value of the argument
 #'
 #' @param key Valid Wunderground API key
+#' @return TRUE if setApiKey succeded
 #' @examples
 #' setApiKey('1a2b3c4d5e6f7g8h9i0j')
-#' @return TRUE if setApiKey succeded
 #' @export
 setApiKey <- function(key) {
     Sys.setenv(WUNDERSCRAPER_KEY=key)
