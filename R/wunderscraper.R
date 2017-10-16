@@ -6,18 +6,21 @@
 #' The sampling strategy has two components:
 #' \enumerate{
 #'   \item A sampling frame defining the spatial area or units from which a sample
-#'    will be taken.
+#'     will be taken.  The is defined by the dataframe supplied via the dat
+#'     parameter
 #'   \item A possibly multistage sampling strategy for selecting weather stations
-#'    within the spatial sampling frame.
+#'     within the spatial sampling frame.
 #' }
 #'
 #' The sampling strategy has one constraint:
 #' \enumerate{
-#'   \item The sampling stages must, at some point, involve at least one of:
-#'     zip code, city name, or latitude/longitude
-#'     This is because these are the units by which the wunderground API looks up
-#'     weather stations within a spatial area.
+#'   \item The data in the dat parameter must have a realtionship for at least
+#'     one of: zip code, city name, or latitude/longitude; set in the query
+#'     parameter.
 #'  }
+#' This is because these are the units by which the wunderground API queries
+#' weather stations within a spatial area.
+#' 
 #' Stages before and after Wunderground's lookup may consist of any spatial unit
 #' the user deems desirable.  Wunderscraper has built in support for sampling by
 #' counties or states prior to the Wunderground lookup, and for sampling by grid
@@ -37,11 +40,15 @@
 #'
 #' @seealso \code{\link[rwunderground]}
 #' @param scheduler A scheduler object.
-#' @param weight A variable for weighting sample probabilities.
-#' @param strata A character string of colon-seperated variable names indicating
-#'   sampling stages.  Wunderscraper infers multistage nesting?
-#' @param dat A dataframe relating spatial sampling strata to each other and to
-#'   the variable in weight
+#' @param dat A dataframe relating the queries, weights, and strata to each
+#'   other.
+#' @param weight A numeric variable indiciating sampling weights.
+#' @param query A character string type variable that provides the `q' parameter
+#'   within a Wunderground geolookup.
+#' @param strata A list of variable names indicating sampling stages.  The list
+#'   may include named elements Wunderscraper infers multistage nesting?
+#' @param o A character string indicating output format.  Output to standard out
+#'   will always be written in JSON.
 #' @return Wunderscraper may output the data directly to a file or to standard
 #'   out.  The output can be the JSON payload as recieved from Wunderground, or
 #'   converted to a dataframe, with each complete sample comprising one
@@ -55,11 +62,13 @@
 #' wunderscraper(scheduler(), weight='COPOP', strata='cluster:grid', o='json')
 #' }
 #' @export
-wunderscraper <- function(scheduler, sampleCo=FALSE, sampleProb='COPOP', sampleStrata='cluster:grid', o='json') {
-    ## expose sampling frame
+wunderscraper <- function(scheduler,                   ## a latlon query would not be unlike a grid
+                          dat=zctaRel, weight='COPOP', query='ZCTA5', strata=c('GEOID', grid=0.01),
+                          o='json') {
     repeat{
+        samplingFrame <- factor(dat[, strata[strata %in% names(dat)]])
         ## !duplicated(zctaRel $GEOID)
-        s <- sample(coRel $GEOID, 1, replace=TRUE, prob=coRel[, sampleProb], drop=TRUE)
+        s <- sample(samplingFrame, 1, replace=TRUE, prob=dat[, weight], drop=TRUE)
         co <- counties()
         ## if(any(s %in% OCONUS)) next
         geolookups <- lapply(zctaRel[zctaRel $GEOID==s, ] $ZCTA5, function(query) {
