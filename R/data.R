@@ -1,0 +1,16 @@
+#' Relationships for zip codes
+#' 
+#' A dataset containing population and land area of zip codes and administrative
+#' boundaries
+#'
+#' @format A data frame with 44410 rows and 5 variables:
+#' \describe{
+#'   \item{ZCTA5}{zip code.}
+#'   \item{GEOID}{5 character string, first 2 characters are the state code and
+#'     last 3 are the county code.}
+#'   \item{COPOP}{county population}
+#'   \item{COAREA}{county area}
+#'   \item{COAREALAND}{county area without water surface}
+#' }
+#' @source \url{https://www2.census.gov/geo/docs/maps-data/data/rel/zcta_county_rel_10.txt}
+"zctaRel"
