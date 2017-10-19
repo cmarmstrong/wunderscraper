@@ -60,10 +60,11 @@
 #' @examples
 #' \dontrun{
 #' wunderscraper(scheduler(), weight='COPOP', strata='cluster:grid', o='json')
+#' query='grid(0.1)', strata=c('STATE')
 #' }
 #' @export
 wunderscraper <- function(scheduler,                   ## a latlon query would not be unlike a grid
-                          dat=zctaRel, weight='COPOP', query='ZCTA5', strata=c('GEOID', grid=0.01),
+                          dat=zctaRel, weight='COPOP', query='ZCTA5', strata=c('GEOID', 'grid(0.01)'),
                           o='json') {
     repeat{
         samplingFrame <- factor(dat[, strata[strata %in% names(dat)]])
