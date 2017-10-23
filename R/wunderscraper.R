@@ -3,19 +3,20 @@
 #' Uses a sampling strategy to scrape wunderground API.
 #'
 #' Wunderscraper scrapes wunderground API with a user provided sampling strategy.
-#' The sampling strategy has two components:
+#' The sampling strategy has three components:
 #' \enumerate{
 #'   \item A sampling frame defining the spatial area or units from which a sample
 #'     will be taken.  The is defined by the dataframe supplied via the dat
-#'     parameter
+#'     parameter.
 #'   \item A possibly multistage sampling strategy for selecting weather stations
 #'     within the spatial sampling frame.
+#'   \item A set of stratifying factors.
 #' }
 #'
 #' The sampling strategy has one constraint:
 #' \enumerate{
 #'   \item The data in the dat parameter must have a realtionship for at least
-#'     one of: zip code, city name, or latitude/longitude; set in the query
+#'     one of: zip code, city name, or latitude/longitude; named in the query
 #'     parameter.
 #'  }
 #' This is because these are the units by which the wunderground API queries
@@ -40,15 +41,15 @@
 #'
 #' @seealso \code{\link[rwunderground]}
 #' @param scheduler A scheduler object.
-#' @param dat A dataframe relating the queries, weights, and strata to each
-#'   other.
+#' @param id A vector of cluster ids.
+#' @param strata A vector of strata
+#' @param query The `q' parameter within a Wunderground geolookup.  A query that
+#'   is also included in the id parameter will be sampled by strata.
 #' @param weight A numeric variable indiciating sampling weights.
-#' @param query A character string type variable that provides the `q' parameter
-#'   within a Wunderground geolookup.
-#' @param strata A list of variable names indicating sampling stages.  The list
-#'   may include named elements Wunderscraper infers multistage nesting?
 #' @param o A character string indicating output format.  Output to standard out
 #'   will always be written in JSON.
+#' @param dat A dataframe relating the queries, weights, and strata to each
+#'   other.
 #' @return Wunderscraper may output the data directly to a file or to standard
 #'   out.  The output can be the JSON payload as recieved from Wunderground, or
 #'   converted to a dataframe, with each complete sample comprising one
