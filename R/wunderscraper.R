@@ -64,14 +64,19 @@
 #' query='grid(0.1)', strata=c('STATE')
 #' }
 #' @export
+
+## proposed form:
+## dat1 <- sample(id[1], strata[1], weight[1], dat)
+## dat1q <- queryWU(query, dat1)
+## dat2 <- sample(id[2], strata[2], weight[2], dat1q)
+## repeat{ station query procedure }
 wunderscraper <- function(scheduler,                   ## a latlon query would not be unlike a grid
-                          dat=zctaRel, weight='COPOP', query='ZCTA5', strata=c('GEOID', 'grid(0.01)'),
-                          o='json') {
+                          id='GEOID', strata='grid', query='ZCTA5', weight='COPOP',
+                          sampleFrame=zctaRel, o='json') {
     repeat{
-        samplingFrame <- factor(dat[, strata[strata %in% names(dat)]])
         ## !duplicated(zctaRel $GEOID)
-        s <- sample(samplingFrame, 1, replace=TRUE, prob=dat[, weight], drop=TRUE)
-        co <- counties()
+        s <- sample(sampleFrame, 1, replace=TRUE, prob=sampleFrame[, weight], drop=TRUE)
+        stCounties <- counties(state=substr(s $GEOID, 1, 2), cb=TRUE, resolution='20m')
         ## if(any(s %in% OCONUS)) next
         geolookups <- lapply(zctaRel[zctaRel $GEOID==s, ] $ZCTA5, function(query) {
             schedule(scheduler)
