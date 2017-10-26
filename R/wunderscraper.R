@@ -48,6 +48,8 @@
 #' @param weight A numeric variable indiciating sampling weights.
 #' @param o A character string indicating output format.  Output to standard out
 #'   will always be written in JSON.
+#' @param geom A function name indicating the tigris function for quering
+#'   geometries
 #' @param dat A dataframe relating the queries, weights, and strata to each
 #'   other.
 #' @return Wunderscraper may output the data directly to a file or to standard
@@ -60,7 +62,7 @@
 #'   finishes normally, else FALSE.
 #' @examples
 #' \dontrun{
-#' wunderscraper(scheduler(), weight='COPOP', strata='cluster:grid', o='json')
+#' wunderscraper(scheduler(), id='GEOID', strata='grid', weight='COPOP', sampleFrame=zctaRel, o='json')
 #' query='grid(0.1)', strata=c('STATE')
 #' }
 #' @export
@@ -72,11 +74,12 @@
 ## repeat{ station query procedure }
 wunderscraper <- function(scheduler,                   ## a latlon query would not be unlike a grid
                           id='GEOID', strata='grid', query='ZCTA5', weight='COPOP',
-                          sampleFrame=zctaRel, o='json') {
+                          sampleFrame=zctaRel, geom=counties, o='json') {
     repeat{
         ## !duplicated(zctaRel $GEOID)
+        ## how to handle multiple sample stages
         s <- sample(sampleFrame, 1, replace=TRUE, prob=sampleFrame[, weight], drop=TRUE)
-        stCounties <- counties(state=substr(s $GEOID, 1, 2), cb=TRUE, resolution='20m')
+        geom <- st_tigris(state=substr(s $GEOID, 1, 2), cb=TRUE, resolution='20m')
         ## if(any(s %in% OCONUS)) next
         geolookups <- lapply(zctaRel[zctaRel $GEOID==s, ] $ZCTA5, function(query) {
             schedule(scheduler)
