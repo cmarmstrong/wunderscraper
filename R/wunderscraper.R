@@ -41,6 +41,10 @@
 #'
 #' @seealso \code{\link[rwunderground]}
 #' @param scheduler A scheduler object.
+#' @param sampleSize A vector of integers specifying sample size at each stage.
+#'   When missing the top stage is assumed sampling with replacement and
+#'   subsequent stages are complete sampling.  If not specified for all stages
+#'   then unspecified stages are assumed complete sampling.
 #' @param id A vector of cluster ids.
 #' @param strata A vector of strata
 #' @param query The `q' parameter within a Wunderground geolookup.  A query that
@@ -72,12 +76,30 @@
 ## dat1q <- queryWU(query, dat1)
 ## dat2 <- sample(id[2], strata[2], weight[2], dat1q)
 ## repeat{ station query procedure }
-wunderscraper <- function(scheduler,                   ## a latlon query would not be unlike a grid
+## can specify state for counties, or county for blocs.
+## state requires nothing, county state, bloc county?
+
+
+## before starting the vector arguments must be made the same length because
+## recycling is not what I want.
+mapply(function(sampleSize, id, strata, weight, sampleFrame) {
+    idFrame <- sampleFrame[!duplicated(sampleFrame[, id, drop=TRUE]), ]
+    by(idFrame, strata, sample,
+       strataFrame, sampleSize, replace=FALSE, prob=strataFrame[, weight])
+},
+       sampleSize, id, strata, weight, sampleFrame)
+
+
+wunderscraper <- function(scheduler, ## a latlon query would not be unlike a grid
+                          sampleSize,
                           id='GEOID', strata='grid', query='ZCTA5', weight='COPOP',
-                          sampleFrame=zctaRel, geom=counties, o='json') {
+                          sampleFrame=zctaRel, st_tigris=counties, o='json') {
     repeat{
         ## !duplicated(zctaRel $GEOID)
-        ## how to handle multiple sample stages
+        ## how to handle multiple sample stages?
+        ## sampling stages loop that checks if a unique state or county are identified by
+        ## sampling and get TIGRE geometry when ready.  After getting geometries do any
+        ## grid stuff and continue sampling.
         s <- sample(sampleFrame, 1, replace=TRUE, prob=sampleFrame[, weight], drop=TRUE)
         geom <- st_tigris(state=substr(s $GEOID, 1, 2), cb=TRUE, resolution='20m')
         ## if(any(s %in% OCONUS)) next
