@@ -80,14 +80,17 @@
 ## state requires nothing, county state, bloc county?
 
 
-## before starting the vector arguments must be made the same length because
-## recycling is not what I want.
+sampleParams <- list(sampleSize, id, strata, weight)
+sampleParams <- lapply(sampleParams, `length<-`, max(lengths(sampleParams)))
 mapply(function(sampleSize, id, strata, weight, sampleFrame) {
     idFrame <- sampleFrame[!duplicated(sampleFrame[, id, drop=TRUE]), ]
-    by(idFrame, strata, sample,
-       strataFrame, sampleSize, replace=FALSE, prob=strataFrame[, weight])
-},
-       sampleSize, id, strata, weight, sampleFrame)
+    if(is.na(sampleSize)) return(idFrame) # complete sampling
+    if(is.na(strata)) {                   # simple sampling
+        return(sample(idFrame, sampleSize, replace=FALSE, prob=idFrame[, weight]))
+    }
+    by(idFrame, strata, sample,           # stratafied sampling
+       strataFrame, sampleSize, replace=FALSE, prob=strataFrame[, weight])},
+    list(sampleParams, sampleFrame))
 
 
 wunderscraper <- function(scheduler, ## a latlon query would not be unlike a grid
