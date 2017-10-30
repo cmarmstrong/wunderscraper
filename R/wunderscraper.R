@@ -71,6 +71,7 @@
 #' }
 #' @export
 
+
 ## proposed form:
 ## dat1 <- sample(id[1], strata[1], weight[1], dat)
 ## dat1q <- queryWU(query, dat1)
@@ -79,7 +80,14 @@
 ## can specify state for counties, or county for blocs.
 ## state requires nothing, county state, bloc county?
 
-
+## two problems to solve in specifying sample desing:
+##   1. getting geometries
+##   2. getting stations
+## solutions:
+##   specify station lookup as a stage in the sample id vector
+##   use a multiphase syntax with a list of two lists containing the sample parameters
+##   for before and after the station lookup
+## sampling parameter vectors must be equal length, otherwise mapply recycles
 sampleParams <- list(sampleSize, id, strata, weight)
 sampleParams <- lapply(sampleParams, `length<-`, max(lengths(sampleParams)))
 mapply(function(sampleSize, id, strata, weight, sampleFrame) {
@@ -87,11 +95,32 @@ mapply(function(sampleSize, id, strata, weight, sampleFrame) {
     if(is.na(sampleSize)) return(idFrame) # complete sampling
     if(is.na(strata)) {                   # simple sampling
         return(sample(idFrame, sampleSize, replace=FALSE, prob=idFrame[, weight]))
-    }
+    } # else
     by(idFrame, strata, sample,           # stratafied sampling
        strataFrame, sampleSize, replace=FALSE, prob=strataFrame[, weight])},
-    list(sampleParams, sampleFrame))
-
+    c(sampleParams, sampleFrame))
+## this function should return a query value?
+## the sampleFrame needs to be modified at each loop for the sampled units?
+##    idea: sampleFrame is object with reference semantics (struct(new.env()))
+## the function should be recursive?
+## the function should check before each loop if it can download geometry from TIGRE?
+##   after dl'ing geom, create sf object from relationship table and geometries?
+##   the conditions for downloading are set in wunderscraper signature?
+##     and these are if dl'ing states, counties, or blocs?
+##     states immediately, counties after a single state identified in relations table
+##     blocs after single county identified in relations table
+## when are grids or other geometric features or clusters generated?
+##   grids can be generated as soon as geometries are available.
+##   so, I need a function for getting the geometries that also adds grids and other stuff?
+## similar to when does function get geometries, when does it get stations with geolookup?
+##   the query must happen after geometries dl'ed?
+##   yes, because all the queries, zip code lat lon or city name, are all sub county, so
+##   will identify a county and thus meet the condition for dl'ing blocs, the smallest geometry.
+##   what about zip codes or cities that cross bloc, county, or even state lines?
+##   should there be if id==query then send sample results to wunderlookup to get stations?
+##     if so, should this process also be stratafied as the other sampling?
+##     (divide into strata then sample within each strata?  must avoid redundant geolookups,
+##     so this process might have to be a little different implementation than other sampling steps)
 
 wunderscraper <- function(scheduler, ## a latlon query would not be unlike a grid
                           sampleSize,
