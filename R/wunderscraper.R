@@ -80,6 +80,34 @@
 ## can specify state for counties, or county for blocs.
 ## state requires nothing, county state, bloc county?
 
+## two phase design: first phase returns query parameter(s),
+##   second phase samples stations
+## two functions: one for first phase another for second
+
+
+phase1 <- function(sampleSize, id, strata, weight, sampleFrame) { # returns query values
+    sampleParams <- list(sampleSize, id, strata, weight) # arg vectors must be equal length
+    sampleParams <- lapply(sampleParams, `length<-`, max(lengths(sampleParams)))
+    sampleFrame <- as.environment(sampleFrame) # data with referenc semantics
+    ## imperative not functional, maybe rewrite with loop to be explicit
+    mapply(function(sampleSize, id, strata, weight) {
+        idFrame <- as.environment(eapply(sampleFrame, '[', !duplicated(sampleFrame $id)))
+        if(is.na(sampleSize)) return(idFrame $id) # complete sampling
+        if(is.na(strata)) {                       # simple sampling
+            idSample <- with(idFrame, sample(id, sampleSize, replace=FALSE, prob=weight))
+            sampleFrame <- as.environment(eapply(sampleFrame, '[', # define [.envFrame?
+                                                 sampleFrame $id%in%idSample $id))
+            return(idSample $id)
+        } # else (implied return)
+        idSample <- tapply(sampleFrame, sampleFrame $strata, function(strataFrame) {
+            sample(strataFrame, sampleSize, replace=FALSE, prob=strataFrame $weight)})
+        sampleFrame <- as.environment(eapply(sampleFrame, '[',
+                                             sampleFrame $id%in%idSample $id))
+        return(idSample $id)
+    }, c(sampleParams, sampleFrame))
+    as.data.frame(sampleFrame) # wunderscraper will use '[['(sampleFrame, query)
+}
+
 ## two problems to solve in specifying sample desing:
 ##   1. getting geometries
 ##   2. getting stations
@@ -87,30 +115,12 @@
 ##   specify station lookup as a stage in the sample id vector
 ##   use a multiphase syntax with a list of two lists containing the sample parameters
 ##   for before and after the station lookup
-## sampling parameter vectors must be equal length, otherwise mapply recycles
-sampleParams <- list(sampleSize, id, strata, weight)
-sampleParams <- lapply(sampleParams, `length<-`, max(lengths(sampleParams)))
-mapply(function(sampleSize, id, strata, weight, sampleFrame) {
-    idFrame <- sampleFrame[!duplicated(sampleFrame[, id, drop=TRUE]), ]
-    if(is.na(sampleSize)) return(idFrame) # complete sampling
-    if(is.na(strata)) {                   # simple sampling
-        return(sample(idFrame, sampleSize, replace=FALSE, prob=idFrame[, weight]))
-    } # else
-    by(idFrame, strata, sample,           # stratafied sampling
-       strataFrame, sampleSize, replace=FALSE, prob=strataFrame[, weight])},
-    c(sampleParams, sampleFrame))
-## two functions: one for first phase another for second
-## first function should return a query value?
-## how to determine when to download TIGRE geometries?
-## the function should check before each loop if it can download geometry from TIGRE?
+## dl geometries once for each phase
 ##   after dl'ing geom, create sf object from relationship table and geometries?
 ##   the conditions for downloading are set in wunderscraper signature?
 ##     and these are if dl'ing states, counties, or blocs?
 ##     states immediately, counties after a single state identified in relations table
 ##     blocs after single county identified in relations table
-## the sampleFrame needs to be modified at each loop for the sampled units?
-##   idea: sampleFrame is object with reference semantics (struct(new.env()))
-## the function should be recursive?
 ## when are grids or other geometric features or clusters generated?
 ##   grids can be generated as soon as geometries are available.
 ##   so, I need a function for getting the geometries that also adds grids and other stuff?
@@ -124,7 +134,6 @@ mapply(function(sampleSize, id, strata, weight, sampleFrame) {
 ##     if so, should this process also be stratafied as the other sampling?
 ##     (divide into strata then sample within each strata?  must avoid redundant geolookups,
 ##     so this process might have to be a little different implementation than other sampling steps)
-
 getTIGRE <- function(state=NULL, county=NULL, cb=TRUE, resolution=20m) {
     if(is.null(county)) {
         if(is.null(state)) states(cb=cb, resolution=resolution)
@@ -141,7 +150,7 @@ getGeometry <- function() {
 wunderscraper <- function(scheduler, ## a latlon query would not be unlike a grid
                           sampleSize,
                           id='GEOID', strata='grid', query='ZCTA5', weight='COPOP',
-                          sampleFrame=zctaRel, st_tigris=counties, o='json') {
+                          sampleFrame=zctaRel, geometries=counties, o='json') {
     repeat{
         ## !duplicated(zctaRel $GEOID)
         ## how to handle multiple sample stages?
