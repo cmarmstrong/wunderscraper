@@ -99,19 +99,22 @@ mapply(function(sampleSize, id, strata, weight, sampleFrame) {
     by(idFrame, strata, sample,           # stratafied sampling
        strataFrame, sampleSize, replace=FALSE, prob=strataFrame[, weight])},
     c(sampleParams, sampleFrame))
-## this function should return a query value?
-## the sampleFrame needs to be modified at each loop for the sampled units?
-##    idea: sampleFrame is object with reference semantics (struct(new.env()))
-## the function should be recursive?
+## two functions: one for first phase another for second
+## first function should return a query value?
+## how to determine when to download TIGRE geometries?
 ## the function should check before each loop if it can download geometry from TIGRE?
 ##   after dl'ing geom, create sf object from relationship table and geometries?
 ##   the conditions for downloading are set in wunderscraper signature?
 ##     and these are if dl'ing states, counties, or blocs?
 ##     states immediately, counties after a single state identified in relations table
 ##     blocs after single county identified in relations table
+## the sampleFrame needs to be modified at each loop for the sampled units?
+##   idea: sampleFrame is object with reference semantics (struct(new.env()))
+## the function should be recursive?
 ## when are grids or other geometric features or clusters generated?
 ##   grids can be generated as soon as geometries are available.
 ##   so, I need a function for getting the geometries that also adds grids and other stuff?
+##   will get geometries once for each phase (or not if set not to?)
 ## similar to when does function get geometries, when does it get stations with geolookup?
 ##   the query must happen after geometries dl'ed?
 ##   yes, because all the queries, zip code lat lon or city name, are all sub county, so
@@ -121,6 +124,19 @@ mapply(function(sampleSize, id, strata, weight, sampleFrame) {
 ##     if so, should this process also be stratafied as the other sampling?
 ##     (divide into strata then sample within each strata?  must avoid redundant geolookups,
 ##     so this process might have to be a little different implementation than other sampling steps)
+
+getTIGRE <- function(state=NULL, county=NULL, cb=TRUE, resolution=20m) {
+    if(is.null(county)) {
+        if(is.null(state)) states(cb=cb, resolution=resolution)
+        else counties(state=state, cb=cb, resolution=resolution)
+    } else blocks(state=state, county=county) # if !is.null(county) then state cannot be null
+}
+
+getGeometry <- function() {
+    geom <- getTIGRE()
+    ## add grids
+}
+
 
 wunderscraper <- function(scheduler, ## a latlon query would not be unlike a grid
                           sampleSize,
