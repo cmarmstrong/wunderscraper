@@ -70,24 +70,14 @@
 #' query='grid(0.1)', strata=c('STATE')
 #' }
 #' @export
-wunderscraper <- function(scheduler, # a latlon query would not be unlike a grid
-                          sampleSize,
-                          id=c('GEOID', 'ZCTA5'), strata=c(NA, 'grid'),
-                          query='ZCTA5',
-                          weight='COPOP', geometries,
-                          sampleFrame=zctaRel, o='json') {
-    repeat{
-        ## should frames be made st objects from start?
-        stations <- getStations(sampleSize, id, strata, query, weight, geometries,
+wunderscraper <- function(scheduler, sampleSize, id=c('GEOID', 'ZCTA5'), strata=c(NA, 'grid'), query='ZCTA5', weight='COPOP', geometry='county', cellsize=c(NA, 0.01), sampleFrame=zctaRel, o='json') {
+    repeat{ # ? if(any(s %in% OCONUS)) next ?
+        stations <- getStations(sampleSize, id, strata, query,
+                                weight, geometry, cellsize,
                                 sampleFrame)
-        ## zctaRel[zctaRel $GEOID==s, ] $ZCTA5
-
         dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
         dir.create(dirname)
         repeat{
-            ## stations will be stratified in getStations, not here
-            stations <- unlist(with(geolookups,
-                                    tapply(id, strata, sample, 1, simplify=FALSE)))
             for(station in sample(stations)) { # default sample reorders
                 schedule(scheduler)
                 wuUrn <- wuPath(
@@ -97,26 +87,6 @@ wunderscraper <- function(scheduler, # a latlon query would not be unlike a grid
                                      paste0(station, '-', as.integer(Sys.time()), '.json')))
             }
             sync(scheduler)
-            ## sample strat will always be implemented in getStations, not here
-            if(sampleCo) break # sample next county
         }
     }
 }
-
-## proposed form:
-## dat1 <- sample(id[1], strata[1], weight[1], dat)
-## dat1q <- queryWU(query, dat1)
-## dat2 <- sample(id[2], strata[2], weight[2], dat1q)
-## repeat{ station query procedure }
-## can specify state for counties, or county for blocs.
-## state requires nothing, county state, bloc county?
-
-## two phase design: first phase returns query parameter(s),
-##   second phase samples stations
-## two functions: one for first phase another for second
-
-
-## if(any(s %in% OCONUS)) next
-## could reuse for both phases.  last stage of phase 1 must be query.  could make this simple multistage
-## if set which id variable will be used for querying too, and after that stage do the geolookup, merge
-## in the stations, then continue?  only problem: when to do second geometry?
