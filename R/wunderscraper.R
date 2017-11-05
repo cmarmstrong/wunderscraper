@@ -85,103 +85,58 @@
 ## two functions: one for first phase another for second
 
 
+## if(any(s %in% OCONUS)) next
 phase1 <- function(sampleSize, id, strata, weight, sampleFrame) { # returns query values
-    sampleParams <- list(sampleSize, id, strata, weight) # arg vectors must be equal length
-    sampleParams <- lapply(sampleParams, `length<-`, max(lengths(sampleParams)))
-    sampleFrame <- as.environment(sampleFrame) # data with referenc semantics
-    ## imperative not functional, maybe rewrite with loop to be explicit
-    mapply(function(sampleSize, id, strata, weight) {
-        idFrame <- as.environment(eapply(sampleFrame, '[', !duplicated(sampleFrame $id)))
-        if(is.na(sampleSize)) return(idFrame $id) # complete sampling
-        if(is.na(strata)) {                       # simple sampling
-            idSample <- with(idFrame, sample(id, sampleSize, replace=FALSE, prob=weight))
-            sampleFrame <- as.environment(eapply(sampleFrame, '[', # define [.envFrame?
-                                                 sampleFrame $id%in%idSample $id))
-            return(idSample $id)
-        } # else (implied return)
+    sampleParams <- list(sampleSize, id, strata, weight)
+    nstages <- max(lengths(sampleParams))
+    sampleParams <- lapply(sampleParams, `length<-`, nstages) # arg vectors must be equal length
+    ## SUGGEST move list elements sampleParams to function environment
+    for(i in nstages) {
+        idFrame <- sampleFrame[!duplicated(sampleFrame $id), ]
+        if(is.na(sampleSize)) next # complete sampling
+        if(is.na(strata)) {        # simple sampling
+            idSample <- with(idFrame,
+                             sample(as.name(id[i]), sampleSize[i], replace=FALSE, prob=as.name(weight[i])))
+            sampleFrame <- sampleFrame[sampleFrame $id%in%idSample, ]
+        } # else stratified sampling
         idSample <- tapply(sampleFrame, sampleFrame $strata, function(strataFrame) {
-            sample(strataFrame, sampleSize, replace=FALSE, prob=strataFrame $weight)})
-        sampleFrame <- as.environment(eapply(sampleFrame, '[',
-                                             sampleFrame $id%in%idSample $id))
-        return(idSample $id)
-    }, c(sampleParams, sampleFrame))
-    as.data.frame(sampleFrame) # wunderscraper will use '[['(sampleFrame, query)
-}
-
-## two problems to solve in specifying sample desing:
-##   1. getting geometries
-##   2. getting stations
-## solutions:
-##   specify station lookup as a stage in the sample id vector
-##   use a multiphase syntax with a list of two lists containing the sample parameters
-##   for before and after the station lookup
-## dl geometries once for each phase
-##   after dl'ing geom, create sf object from relationship table and geometries?
-##   the conditions for downloading are set in wunderscraper signature?
-##     and these are if dl'ing states, counties, or blocs?
-##     states immediately, counties after a single state identified in relations table
-##     blocs after single county identified in relations table
-## when are grids or other geometric features or clusters generated?
-##   grids can be generated as soon as geometries are available.
-##   so, I need a function for getting the geometries that also adds grids and other stuff?
-##   will get geometries once for each phase (or not if set not to?)
-## similar to when does function get geometries, when does it get stations with geolookup?
-##   the query must happen after geometries dl'ed?
-##   yes, because all the queries, zip code lat lon or city name, are all sub county, so
-##   will identify a county and thus meet the condition for dl'ing blocs, the smallest geometry.
-##   what about zip codes or cities that cross bloc, county, or even state lines?
-##   should there be if id==query then send sample results to wunderlookup to get stations?
-##     if so, should this process also be stratafied as the other sampling?
-##     (divide into strata then sample within each strata?  must avoid redundant geolookups,
-##     so this process might have to be a little different implementation than other sampling steps)
-getTIGRE <- function(state=NULL, county=NULL, cb=TRUE, resolution=20m) {
-    if(is.null(county)) {
-        if(is.null(state)) states(cb=cb, resolution=resolution)
-        else counties(state=state, cb=cb, resolution=resolution)
-    } else blocks(state=state, county=county) # if !is.null(county) then state cannot be null
-}
-
-getGeometry <- function() {
-    geom <- getTIGRE()
-    ## add grids
+            with(strataFrame, sample(as.name(id[i]), sampleSize[i], replace=FALSE, prob=as.name(weight[i])))})
+        sampleFrame <- sampleFrame[sampleFrame $id%in%idSample $id, ]
+    }
+    ## or do I just need the id variable name for the last stage, and then can get values from sampleFrame?
+    sampleFrame # wunderscraper will use '[['(sampleFrame, query)
 }
 
 
-wunderscraper <- function(scheduler, ## a latlon query would not be unlike a grid
+wunderscraper <- function(scheduler, # a latlon query would not be unlike a grid
                           sampleSize,
                           id='GEOID', strata='grid', query='ZCTA5', weight='COPOP',
                           sampleFrame=zctaRel, geometries=counties, o='json') {
     repeat{
-        ## !duplicated(zctaRel $GEOID)
-        ## how to handle multiple sample stages?
-        ## sampling stages loop that checks if a unique state or county are identified by
-        ## sampling and get TIGRE geometry when ready.  After getting geometries do any
-        ## grid stuff and continue sampling.
-        s <- sample(sampleFrame, 1, replace=TRUE, prob=sampleFrame[, weight], drop=TRUE)
-        geom <- st_tigris(state=substr(s $GEOID, 1, 2), cb=TRUE, resolution='20m')
-        ## if(any(s %in% OCONUS)) next
-        geolookups <- lapply(zctaRel[zctaRel $GEOID==s, ] $ZCTA5, function(query) {
+        ## phase 1
+        geom1 <- getGeometry(state[[1]], county[[1]])
+        phase1Frame <- phase1()
+        ## zctaRel[zctaRel $GEOID==s, ] $ZCTA5
+        geolookups <- lapply(phase1Frame[, query], function(query) {
             schedule(scheduler)
-            GETjson(wuUrl, wuPath(wuKey, 'geolookup', query, 'json'))
-        })
-        geolookups <- lapply(geolookups, function(zcta) {
-            if(!is.null(zcta $response $error)) return(NA)
-            ## z <- zcta $location $zip
-            with(zcta $location $nearby_weather_stations $pws $station,
+            geolookup <- GETjson(wuUrl, wuPath(wuKey, 'geolookup', query, 'json'))
+            if(!is.null(geolookup $response $error)) return(NA)
+            ## zcta <- query $location $zip
+            with(geolookup $location $nearby_weather_stations $pws $station,
                  st_sf(geometry=st_cast(st_sfc(st_multipoint(
                            matrix(c(lon, lat), ncol=2))), 'POINT'),
                        id=id,
                        stringsAsFactors=FALSE)) # ,
-                       ## ZCTA5=z)) # zcta is unecessary
+                       ## ZCTA5=zcta)) # unecessary
         })
         geolookups <- do.call(rbind, geolookups[!is.na(geolookups)])
-        geolookups <- geolookups[!duplicated(geolookups $id), ] ## remove duplicate stations
-        st_crs(geolookups) <- 4326 ## WU in 4326
-        geolookups <- st_transform(geolookups, st_crs(co))
-        geolookups <- st_intersection(geolookups, co[co $GEOID==s, ])
-        m <- Mclust(st_coordinates(geolookups), modelNames='VII')
-        geolookups $cluster <- as.factor(m $classification)
-        geolookups $grid <- as.factor(unlist(
+        geolookups <- geolookups[!duplicated(geolookups $id), ] # remove duplicate stations
+        st_crs(geolookups) <- 4326 # WU in 4326
+        geolookups <- st_transform(geolookups, st_crs(geom1))
+        geolookups <- st_intersection(geolookups, geom1[geom1 $id%in%phase1Frame[, id[[1]][length(id[[1]])]], ])
+        ## phase 2
+        geom2 <- getGeometry(state[[2]], county[[2]], cellsize[[2]]) # this normally gets grid
+        geolookups $grid <- as.factor(unlist(  # geolookups are an st object; should I add grid to it?
             st_intersects(geolookups, st_make_grid(geolookups, 0.01))))
         geolookups $strata <- with(geolookups, eval(parse(text=sampleStrata)))
         dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
