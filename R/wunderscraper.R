@@ -86,6 +86,9 @@
 
 
 ## if(any(s %in% OCONUS)) next
+## could reuse for both phases.  last stage of phase 1 must be query.  could make this simple multistage
+## if set which id variable will be used for querying too, and after that stage do the geolookup, merge
+## in the stations, then continue?  only problem: when to do second geometry?
 phase1 <- function(sampleSize, id, strata, weight, sampleFrame) { # returns query values
     sampleParams <- list(sampleSize, id, strata, weight)
     nstages <- max(lengths(sampleParams))
@@ -114,6 +117,7 @@ wunderscraper <- function(scheduler, # a latlon query would not be unlike a grid
                           sampleFrame=zctaRel, geometries=counties, o='json') {
     repeat{
         ## phase 1
+        ## should frames be made st objects from start?
         geom1 <- getGeometry(state[[1]], county[[1]])
         phase1Frame <- phase1()
         ## zctaRel[zctaRel $GEOID==s, ] $ZCTA5
@@ -138,6 +142,7 @@ wunderscraper <- function(scheduler, # a latlon query would not be unlike a grid
         geom2 <- getGeometry(state[[2]], county[[2]], cellsize[[2]]) # this normally gets grid
         geolookups $grid <- as.factor(unlist(  # geolookups are an st object; should I add grid to it?
             st_intersects(geolookups, st_make_grid(geolookups, 0.01))))
+
         geolookups $strata <- with(geolookups, eval(parse(text=sampleStrata)))
         dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
         dir.create(dirname)
