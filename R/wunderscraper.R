@@ -70,7 +70,36 @@
 #' query='grid(0.1)', strata=c('STATE')
 #' }
 #' @export
+wunderscraper <- function(scheduler, # a latlon query would not be unlike a grid
+                          sampleSize,
+                          id='GEOID', strata='grid', query='ZCTA5', weight='COPOP',
+                          geometries, sampleFrame=zctaRel, o='json') {
+    repeat{
+        ## should frames be made st objects from start?
+        stations <- getStations(sampleSize, id, strata, query, weight, geometries,
+                                sampleFrame)
+        ## zctaRel[zctaRel $GEOID==s, ] $ZCTA5
 
+        dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
+        dir.create(dirname)
+        repeat{
+            ## stations will be stratified in getStations, not here
+            stations <- unlist(with(geolookups,
+                                    tapply(id, strata, sample, 1, simplify=FALSE)))
+            for(station in sample(stations)) { # default sample reorders
+                schedule(scheduler)
+                wuUrn <- wuPath(
+                    wuKey, 'conditions', paste('pws', station, sep=':'), 'json')
+                write_json(toJSON(GETjson(wuUrl, wuUrn)),
+                           file.path(dirname,
+                                     paste0(station, '-', as.integer(Sys.time()), '.json')))
+            }
+            sync(scheduler)
+            ## sample strat will always be implemented in getStations, not here
+            if(sampleCo) break # sample next county
+        }
+    }
+}
 
 ## proposed form:
 ## dat1 <- sample(id[1], strata[1], weight[1], dat)
@@ -89,63 +118,3 @@
 ## could reuse for both phases.  last stage of phase 1 must be query.  could make this simple multistage
 ## if set which id variable will be used for querying too, and after that stage do the geolookup, merge
 ## in the stations, then continue?  only problem: when to do second geometry?
-phase1 <- function(sampleSize, id, strata, weight, sampleFrame) { # returns query values
-    sampleParams <- list(sampleSize, id, strata, weight)
-    nstages <- max(lengths(sampleParams))
-    sampleParams <- lapply(sampleParams, `length<-`, nstages) # arg vectors must be equal length
-    ## SUGGEST move list elements sampleParams to function environment
-    ## the stages loop MUST get geometries (eg sample counties, divide counties into grids, and sample from grid)
-    ## stages are fully hierarchical, so each stage will get geometries for next stage
-    for(i in nstages) {
-        idFrame <- sampleFrame[!duplicated(sampleFrame $id), ]
-        if(is.na(sampleSize)) next # complete sampling
-        if(is.na(strata)) {        # simple sampling
-            idSample <- with(idFrame,
-                             sample(as.name(id[i]), sampleSize[i], replace=FALSE, prob=as.name(weight[i])))
-            sampleFrame <- sampleFrame[sampleFrame $id%in%idSample, ]
-        } else {                   # stratified sampling
-        idSample <- tapply(sampleFrame, sampleFrame $strata, function(strataFrame) {
-            with(strataFrame, sample(as.name(id[i]), sampleSize[i], replace=FALSE, prob=as.name(weight[i])))})
-        sampleFrame <- sampleFrame[sampleFrame $id%in%idSample $id, ]
-        }
-        geom <- getGeometries(geometries, idSample $id)
-        ## merge geom into sampleFrame (making sample frame st)
-        if(id[i]==query) {
-            geolookups <- getGeolookup(sampleFrame[, query])
-            ## merge geolookups to sampleFrame?
-        }
-    }
-    ## or do I just need the id variable name for the last stage, and then can get values from sampleFrame?
-    sampleFrame # wunderscraper will use '[['(sampleFrame, query)
-}
-
-
-wunderscraper <- function(scheduler, # a latlon query would not be unlike a grid
-                          sampleSize,
-                          id='GEOID', strata='grid', query='ZCTA5', weight='COPOP',
-                          sampleFrame=zctaRel, geometries='county',
-                          o='json') {
-    repeat{
-        ## phase 1
-        ## should frames be made st objects from start?
-        phase1Frame <- phase1()
-        ## zctaRel[zctaRel $GEOID==s, ] $ZCTA5
-
-        dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
-        dir.create(dirname)
-        repeat{
-            stations <- unlist(with(geolookups,
-                                    tapply(id, strata, sample, 1, simplify=FALSE)))
-            for(station in sample(stations)) { # default sample reorders
-                schedule(scheduler)
-                wuUrn <- wuPath(
-                    wuKey, 'conditions', paste('pws', station, sep=':'), 'json')
-                write_json(toJSON(GETjson(wuUrl, wuUrn)),
-                           file.path(dirname,
-                                     paste0(station, '-', as.integer(Sys.time()), '.json')))
-            }
-            sync(scheduler)
-            if(sampleCo) break # sample next county
-        }
-    }
-}

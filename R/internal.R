@@ -52,6 +52,35 @@
     } else blocks(state=state, county=county) # if !is.null(county) then state cannot be null
 }
 
+.getStations <- function(sampleSize, id, strata, query, weight, geometries, sampleFrame) {
+    sampleParams <- list(sampleSize, id, strata, weight)
+    nstages <- max(lengths(sampleParams))
+    sampleParams <- lapply(sampleParams, `length<-`, nstages) # args equal length
+    ## SUGGEST move list elements sampleParams to function environment
+    for(i in nstages) {
+        idFrame <- sampleFrame[!duplicated(sampleFrame $id), ]
+        if(is.na(sampleSize)) next # complete sampling
+        if(is.na(strata)) {        # simple sampling
+            idSample <- with(idFrame,
+                             sample(as.name(id[i]), sampleSize[i],
+                                    replace=FALSE, prob=as.name(weight[i])))
+            sampleFrame <- sampleFrame[sampleFrame $id%in%idSample, ]
+        } else {                   # stratified sampling
+        idSample <- tapply(sampleFrame, sampleFrame $strata, function(strataFrame) {
+            with(strataFrame, sample(as.name(id[i]), sampleSize[i],
+                                     replace=FALSE, prob=as.name(weight[i])))})
+        sampleFrame <- sampleFrame[sampleFrame $id%in%idSample $id, ]
+        }
+        geom <- getGeometries(geometries, idSample $id)
+        ## merge geom into sampleFrame (making sample frame st)
+        if(id[i]==query) {
+            geolookups <- getGeolookup(sampleFrame[, query])
+            ## merge geolookups to sampleFrame?
+        }
+    }
+    sampleFrame # wunderscraper will use '[['(sampleFrame, query)
+}
+
 .wuPath <- function(key, feature, id, format) {
     paste(paste('api', key, feature, 'q', id, sep='/'), format, sep='.')
 }
