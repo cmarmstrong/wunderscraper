@@ -94,6 +94,8 @@ phase1 <- function(sampleSize, id, strata, weight, sampleFrame) { # returns quer
     nstages <- max(lengths(sampleParams))
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # arg vectors must be equal length
     ## SUGGEST move list elements sampleParams to function environment
+    ## the stages loop MUST get geometries (eg sample counties, divide counties into grids, and sample from grid)
+    ## stages are fully hierarchical, so each stage will get geometries for next stage
     for(i in nstages) {
         idFrame <- sampleFrame[!duplicated(sampleFrame $id), ]
         if(is.na(sampleSize)) next # complete sampling
@@ -101,10 +103,17 @@ phase1 <- function(sampleSize, id, strata, weight, sampleFrame) { # returns quer
             idSample <- with(idFrame,
                              sample(as.name(id[i]), sampleSize[i], replace=FALSE, prob=as.name(weight[i])))
             sampleFrame <- sampleFrame[sampleFrame $id%in%idSample, ]
-        } # else stratified sampling
+        } else {                   # stratified sampling
         idSample <- tapply(sampleFrame, sampleFrame $strata, function(strataFrame) {
             with(strataFrame, sample(as.name(id[i]), sampleSize[i], replace=FALSE, prob=as.name(weight[i])))})
         sampleFrame <- sampleFrame[sampleFrame $id%in%idSample $id, ]
+        }
+        geom <- getGeometries(geometries, idSample $id)
+        ## merge geom into sampleFrame (making sample frame st)
+        if(id[i]==query) {
+            geolookups <- getGeolookup(sampleFrame[, query])
+            ## merge geolookups to sampleFrame?
+        }
     }
     ## or do I just need the id variable name for the last stage, and then can get values from sampleFrame?
     sampleFrame # wunderscraper will use '[['(sampleFrame, query)
@@ -114,36 +123,14 @@ phase1 <- function(sampleSize, id, strata, weight, sampleFrame) { # returns quer
 wunderscraper <- function(scheduler, # a latlon query would not be unlike a grid
                           sampleSize,
                           id='GEOID', strata='grid', query='ZCTA5', weight='COPOP',
-                          sampleFrame=zctaRel, geometries=counties, o='json') {
+                          sampleFrame=zctaRel, geometries='county',
+                          o='json') {
     repeat{
         ## phase 1
         ## should frames be made st objects from start?
-        geom1 <- getGeometry(state[[1]], county[[1]])
         phase1Frame <- phase1()
         ## zctaRel[zctaRel $GEOID==s, ] $ZCTA5
-        geolookups <- lapply(phase1Frame[, query], function(query) {
-            schedule(scheduler)
-            geolookup <- GETjson(wuUrl, wuPath(wuKey, 'geolookup', query, 'json'))
-            if(!is.null(geolookup $response $error)) return(NA)
-            ## zcta <- query $location $zip
-            with(geolookup $location $nearby_weather_stations $pws $station,
-                 st_sf(geometry=st_cast(st_sfc(st_multipoint(
-                           matrix(c(lon, lat), ncol=2))), 'POINT'),
-                       id=id,
-                       stringsAsFactors=FALSE)) # ,
-                       ## ZCTA5=zcta)) # unecessary
-        })
-        geolookups <- do.call(rbind, geolookups[!is.na(geolookups)])
-        geolookups <- geolookups[!duplicated(geolookups $id), ] # remove duplicate stations
-        st_crs(geolookups) <- 4326 # WU in 4326
-        geolookups <- st_transform(geolookups, st_crs(geom1))
-        geolookups <- st_intersection(geolookups, geom1[geom1 $id%in%phase1Frame[, id[[1]][length(id[[1]])]], ])
-        ## phase 2
-        geom2 <- getGeometry(state[[2]], county[[2]], cellsize[[2]]) # this normally gets grid
-        geolookups $grid <- as.factor(unlist(  # geolookups are an st object; should I add grid to it?
-            st_intersects(geolookups, st_make_grid(geolookups, 0.01))))
 
-        geolookups $strata <- with(geolookups, eval(parse(text=sampleStrata)))
         dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
         dir.create(dirname)
         repeat{
