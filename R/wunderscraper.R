@@ -72,8 +72,10 @@
 #' @export
 wunderscraper <- function(scheduler, # a latlon query would not be unlike a grid
                           sampleSize,
-                          id='GEOID', strata='grid', query='ZCTA5', weight='COPOP',
-                          geometries, sampleFrame=zctaRel, o='json') {
+                          id=c('GEOID', 'ZCTA5'), strata=c(NA, 'grid'),
+                          query='ZCTA5',
+                          weight='COPOP', geometries,
+                          sampleFrame=zctaRel, o='json') {
     repeat{
         ## should frames be made st objects from start?
         stations <- getStations(sampleSize, id, strata, query, weight, geometries,
