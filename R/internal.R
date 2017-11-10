@@ -58,11 +58,11 @@
                              sample(as.name(id[i]), sampleSize[i], # as.name with idFrame
                                     replace=FALSE, prob=as.name(weight[i])))
         } else { # stratified sampling
-            idSample <- tapply(sampleFrame, sampleFrame[, strata[i], drop=TRUE],
+            idSample <- unlist(tapply(sampleFrame, sampleFrame[, strata[i], drop=TRUE],
                                function(strataFrame) {
                                    with(strataFrame,
                                         sample(as.name(id[i]), sampleSize[i],
-                                               replace=FALSE, prob=as.name(weight[i])))})
+                                               replace=FALSE, prob=as.name(weight[i])))}))
         }
         sampleFrame <- sampleFrame[sampleFrame $id%in%idSample, ]
         geom <- switch(geometries[i], # state GEOID == STATEFP

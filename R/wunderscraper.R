@@ -21,24 +21,37 @@
 #' weather stations within a spatial area.
 #'
 #' In addition to these requirements and constraints, users can specify sampling
-#' strata and spatial grids to use as stages or strata.
+#' weights, strata, and spatial grids to use as stages or strata.
+#'
+#' Users specify a sampling strategy through a set of vector-valued arguments
+#' that indicate the sampling sizes, stages, strata, weights, geometries, and
+#' frame.  All sampling parameter vectors are in stage order, from largest scale
+#' to the smallest, and must be fully nested--eg zip codes sometimes cross
+#' county boundaries, but if county was a previous stage then the zip code
+#' sampling stage will be constrained to the geographic boundaries of the
+#' counties selected in prior sampling stages.  One of the stages must match the
+#' Wunderground lookup value.
 #' 
 #' Stages before and after Wunderground's lookup may consist of any spatial unit
 #' the user deems desirable.  Wunderscraper has built in support for sampling by
-#' counties or states prior to the Wunderground lookup, and for sampling by grid
-#' and spatial cluster after the Wunderground lookup.  Using administrative
-#' boundaries to sample to the step of Wunderground's lookup is convenient due
-#' to their large size and, occasionally, coincidence with geographic features.
-#' Users may opt for grid-sampling througout all sample stages, or use smaller
-#' vector-based boundaries for sampling from weather stations after
-#' Wunderground's lookup--eg streets or neighborhood boundaries.
+#' states, counties, census blocks, and arbitrary spatial grids.  Using
+#' administrative boundaries to sample to the step of Wunderground's lookup is
+#' convenient due to their large size and, occasionally, coincidence with
+#' geographic features.  When sampling stations, after the Wunderground lookup,
+#' it's often more useful to use a spatial grid for sampling IDs or strata to
+#' ensure the sample acheives sufficient coverage.  Users may also opt for
+#' grid-sampling throughout all sample stages, or use smaller vector-based
+#' boundaries for sampling from weather stations after Wunderground's lookup--
+#' eg streets or neighborhood boundaries.
 #'
-#' Sampling strategies can also use a variable for weighting the sample
+#' NOTE: is it possible for users to supply their own geometries?
+#'
+#' Sampling strategies may specify a variable for weighting the sample
 #' probabilities.  Wunderscraper provides state and county populations and land
-#' areas.  If using a grid-based sampling strategy, then Landscan
-#' \url{http://web.ornl.gov/sci/landscan/} or Gridded Population of the World
-#' \url{http://sedac.ciesin.columbia.edu/data/collection/gpw-v4} can provide
-#' population rasters at about a 1km resolution.
+#' areas.
+#'
+#' The sampling parameter vectors will be padded on the right with NA values to
+#' the length of the longest parameter vector.
 #'
 #' @seealso \code{\link[rwunderground]}
 #' @param scheduler A scheduler object.
@@ -46,10 +59,10 @@
 #'   When missing the top stage is assumed sampling with replacement and
 #'   subsequent stages are complete sampling.  If not specified for all stages
 #'   then unspecified stages are assumed complete sampling.
-#' @param id A vector of cluster ids.
-#' @param strata A vector of strata
-#' @param query The `q' parameter within a Wunderground geolookup.  The query
-#'   must be specified as a stage in the id vector.  (is stratafied?)
+#' @param id A vector of strings specifying variable names for cluster ids.
+#' @param strata A vector of strings specifying variable names for strata.
+#' @param query A string specifying the `q' parameter within a Wunderground
+#'   geolookup.  The query  must be specified as a stage in the id vector.
 #' @param weight A vector of strings specifying numeric variables that indiciate
 #'   sampling weights.
 #' @param geometry A vector of strings specifying tigris geometry functions;
@@ -70,8 +83,7 @@
 #'   finishes normally, else FALSE.
 #' @examples
 #' \dontrun{
-#' wunderscraper(scheduler(), id='GEOID', strata='grid', weight='COPOP', sampleFrame=zctaRel, o='json')
-#' query='grid(0.1)', strata=c('STATE')
+#' wunderscraper(scheduler())
 #' }
 #' @export
 wunderscraper <- function(scheduler, sampleSize=NULL, id=c('GEOID', 'ZCTA5'), strata=c(NA, 'grid'), query='ZCTA5', weight='COPOP', geometry='county', cellsize=c(NA, 0.01), sampleFrame=zctaRel, o='json') {
