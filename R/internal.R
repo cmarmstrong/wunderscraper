@@ -13,9 +13,9 @@
 }
 
 .getGeolookup <- function(queries, espg) {
-        geolookups <- lapply(queries, function(query) {
+        geolookups <- lapply(unique(queries), function(query) {
             schedule(scheduler)
-            geolookup <- GETjson(wuUrl, wuPath(wuKey, 'geolookup', query, 'json'))
+            geolookup <- .GETjson(wuUrl, wuPath(wuKey, 'geolookup', query, 'json'))
             if(!is.null(geolookup $response $error)) return(NA)
             ## zcta <- query $location $zip
             with(geolookup $location $nearby_weather_stations $pws $station,
@@ -42,37 +42,40 @@
     if(is.null(county)) {
         if(is.null(state)) states(cb=cb, resolution=resolution, class='sf')
         else counties(state=state, cb=cb, resolution=resolution, class='sf')
-    } else blocks(state=state, county=county) # if !is.null(county) then state cannot be null
+    } else blocks(state=state, county=county) # if !is.null(county) state cannot be null
 }
 
 .getStations <- function(sampleSize, id, strata, query, weight, geometry, cellsize, sampleFrame) {
     sampleParams <- list(sampleSize, id, strata, weight, geometry, cellsize, sampleFrame)
-    nstages <- max(lengths(sampleParams)) ## number of sampling stages
-    sampleParams <- lapply(sampleParams, `length<-`, nstages) # args equal length
-    list2env(sampleParams, environment())
+    nstages <- max(lengths(sampleParams)) # number of sampling stages
+    sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
+    list2env(sampleParams, environment()) # "attach" sampleParams to environment
     for(i in nstages) { # index the arg vectors by i
-        idFrame <- sampleFrame[!duplicated(sampleFrame[, id[i], drop=TRUE]), ]
-        if(is.na(sampleSize[i])) next # complete sampling
-        if(is.na(strata[i])) {        # simple sampling
+        idFrame <- sampleFrame[!duplicated(sampleFrame[, id[i]]), ]
+        if(is.na(sampleSize[i])) idSample <- unique(idFrame $id) # complete sampling
+        if(is.na(strata[i])) { # simple sampling
             idSample <- with(idFrame,
-                             sample(as.name(id[i]), sampleSize[i],
+                             sample(as.name(id[i]), sampleSize[i], # as.name with idFrame
                                     replace=FALSE, prob=as.name(weight[i])))
-            sampleFrame <- sampleFrame[sampleFrame $id%in%idSample, ]
-        } else {                   # stratified sampling
-            idSample <- tapply(sampleFrame, sampleFrame[, strata[i], drop=TRUE], function(strataFrame) {
-                with(strataFrame, sample(as.name(id[i]), sampleSize[i],
-                                         replace=FALSE, prob=as.name(weight[i])))})
-            sampleFrame <- sampleFrame[sampleFrame $id%in%idSample, ]
+        } else { # stratified sampling
+            idSample <- tapply(sampleFrame, sampleFrame[, strata[i], drop=TRUE],
+                               function(strataFrame) {
+                                   with(strataFrame,
+                                        sample(as.name(id[i]), sampleSize[i],
+                                               replace=FALSE, prob=as.name(weight[i])))})
         }
-        geom <- switch(geometries[i],
-                       state=with(sampleFrame, getGeometries(NA, NA, cellsize[i])),
+        sampleFrame <- sampleFrame[sampleFrame $id%in%idSample, ]
+        geom <- switch(geometries[i], # state GEOID == STATEFP
+                       ## state=with(sampleFrame, getGeometries(NA, NA, cellsize[i])),
                        county=with(sampleFrame, getGeometries(STATE, NA, cellsize[i])),
                        block=with(sampleFrame, getGeometries(STATE, COUNTY, cellsize[i])))
-        sampleFrame <- merge(sampleFrame, geom, by='')
+        sampleFrame <- merge(geom, sampleFrame, by='GEOID')
         if(id[i]==query) {
-            geolookups <- getGeolookup(sampleFrame[, query], espg=st_crs(geom))
+            geolookups <- .getGeolookup(sampleFrame[, query], espg=st_crs(geom))
             geolookups <- st_intersection(geolookups, geom)
-            sampleFrame <- merge(sampleFrame, geolookups, by='')
+            geolookups $query <- query
+            sampleFrame <- merge(geolookups, sampleFrame,
+                                 by.x='query', by.y=as.name(query))
         }
     }
     sampleFrame # wunderscraper will use '[['(sampleFrame, query)

@@ -3,24 +3,25 @@
 #' Uses a sampling strategy to scrape wunderground API.
 #'
 #' Wunderscraper scrapes wunderground API with a user provided sampling strategy.
-#' The sampling strategy has three components:
+#' The sampling strategy has two necessary components:
 #' \enumerate{
 #'   \item A sampling frame defining the spatial area or units from which a sample
-#'     will be taken.  The is defined by the dataframe supplied via the dat
-#'     parameter.
+#'     will be taken.
 #'   \item A possibly multistage sampling strategy for selecting weather stations
 #'     within the spatial sampling frame.
-#'   \item A set of stratifying factors.
 #' }
 #'
 #' The sampling strategy has one constraint:
 #' \enumerate{
-#'   \item The data in the dat parameter must have a realtionship for at least
+#'   \item The data in the sampling frame must have a realtionship for at least
 #'     one of: zip code, city name, or latitude/longitude; named in the query
 #'     parameter.
 #'  }
 #' This is because these are the units by which the wunderground API queries
 #' weather stations within a spatial area.
+#'
+#' In addition to these requirements and constraints, users can specify sampling
+#' strata and spatial grids to use as stages or strata.
 #' 
 #' Stages before and after Wunderground's lookup may consist of any spatial unit
 #' the user deems desirable.  Wunderscraper has built in support for sampling by
@@ -47,15 +48,18 @@
 #'   then unspecified stages are assumed complete sampling.
 #' @param id A vector of cluster ids.
 #' @param strata A vector of strata
-#' @param query The `q' parameter within a Wunderground geolookup.  A query that
-#'   is also included in the id parameter will be sampled by strata.
-#' @param weight A numeric variable indiciating sampling weights.
+#' @param query The `q' parameter within a Wunderground geolookup.  The query
+#'   must be specified as a stage in the id vector.  (is stratafied?)
+#' @param weight A vector of strings specifying numeric variables that indiciate
+#'   sampling weights.
+#' @param geometry A vector of strings specifying tigris geometry functions;
+#'   possible values are states, counties, or blocks.
+#' @param cellsize A vector of numerics indicating cellsize for adding grids to
+#'   tigris geometries.  A value of NA indicates no grid.
+#' @param sampleFrame A dataframe relating the queries, weights, and strata to
+#'   each other.
 #' @param o A character string indicating output format.  Output to standard out
 #'   will always be written in JSON.
-#' @param geom A function name indicating the tigris function for quering
-#'   geometries
-#' @param dat A dataframe relating the queries, weights, and strata to each
-#'   other.
 #' @return Wunderscraper may output the data directly to a file or to standard
 #'   out.  The output can be the JSON payload as recieved from Wunderground, or
 #'   converted to a dataframe, with each complete sample comprising one
@@ -70,9 +74,9 @@
 #' query='grid(0.1)', strata=c('STATE')
 #' }
 #' @export
-wunderscraper <- function(scheduler, sampleSize, id=c('GEOID', 'ZCTA5'), strata=c(NA, 'grid'), query='ZCTA5', weight='COPOP', geometry='county', cellsize=c(NA, 0.01), sampleFrame=zctaRel, o='json') {
+wunderscraper <- function(scheduler, sampleSize=NULL, id=c('GEOID', 'ZCTA5'), strata=c(NA, 'grid'), query='ZCTA5', weight='COPOP', geometry='county', cellsize=c(NA, 0.01), sampleFrame=zctaRel, o='json') {
     repeat{ # ? if(any(s %in% OCONUS)) next ?
-        stations <- getStations(sampleSize, id, strata, query,
+        stations <- .getStations(sampleSize, id, strata, query,
                                 weight, geometry, cellsize,
                                 sampleFrame)
         dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
