@@ -59,14 +59,17 @@
 #'   When missing the top stage is assumed sampling with replacement and
 #'   subsequent stages are complete sampling.  If not specified for all stages
 #'   then unspecified stages are assumed complete sampling.
-#' @param id A vector of strings specifying variable names for cluster ids.
+#' @param id A vector of strings specifying variable names for cluster ids.  One
+#'   of the stages must match the query parameter, and the last stage must be
+#'   "id"
 #' @param strata A vector of strings specifying variable names for strata.
 #' @param query A string specifying the `q' parameter within a Wunderground
 #'   geolookup.  The query  must be specified as a stage in the id vector.
 #' @param weight A vector of strings specifying numeric variables that indiciate
 #'   sampling weights.
 #' @param geometry A vector of strings specifying tigris geometry functions;
-#'   possible values are states, counties, or blocks.
+#'   possible values are states, counties, or blocks.  The geometries will be
+#'   available to the next stage.
 #' @param cellsize A vector of numerics indicating cellsize for adding grids to
 #'   tigris geometries.  A value of NA indicates no grid.
 #' @param sampleFrame A dataframe relating the queries, weights, and strata to
@@ -86,19 +89,16 @@
 #' wunderscraper(scheduler())
 #' }
 #' @export
-wunderscraper <- function(scheduler, sampleSize=NULL, id=c('GEOID', 'ZCTA5'), strata=c(NA, 'grid'), query='ZCTA5', weight='COPOP', geometry='county', cellsize=c(NA, 0.01), sampleFrame=zctaRel, o='json') {
+wunderscraper <- function(scheduler, sampleSize=c(1, NA, 1), id=c('GEOID', 'ZCTA5', 'id'), strata=c(NA, NA, 'grid'), query='ZCTA5', weight='COPOP', geometry='county', cellsize=0.01, sampleFrame=zctaRel, o='json') {
     repeat{ # ? if(any(s %in% OCONUS)) next ?
-        stations <- .getStations(sampleSize, id, strata, query,
-                                weight, geometry, cellsize,
-                                sampleFrame)
-        dirname <- file.path(DATADIR, paste0('geoid', s, '-', as.integer(Sys.time())))
+        stations <- .getStations(sampleSize, id, strata, query, weight, geometry, cellsize, sampleFrame)
+        dirname <- file.path(DATADIR, paste0(id[1], stations[, id[1]], '-', as.integer(Sys.time())))
         dir.create(dirname)
         repeat{
             for(station in sample(stations)) { # default sample reorders
                 schedule(scheduler)
-                wuUrn <- wuPath(
-                    wuKey, 'conditions', paste('pws', station, sep=':'), 'json')
-                write_json(toJSON(GETjson(wuUrl, wuUrn)),
+                wuUrn <- .wuPath(getApiKey(), 'conditions', paste('pws', station, sep=':'), 'json')
+                write_json(toJSON(.GETjson(Sys.getenv('WUNDERSCRAPER_URL', wuUrn)),
                            file.path(dirname,
                                      paste0(station, '-', as.integer(Sys.time()), '.json')))
             }
