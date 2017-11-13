@@ -25,3 +25,7 @@ counter <- function(plan='developer', day=NA, minute=NA) {
                       custom=c(day, minute))
     e
 }
+
+.increment <- function(x) UseMethod('increment')
+.increment.default <- function(x) warning(paste0('increment cannot handle class ', class(x)))
+.increment.counter <- function(counter, x=1) counter $n <- counter $n + x

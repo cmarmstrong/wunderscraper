@@ -7,7 +7,7 @@
 #' plan(scheduler, '1 hour') # sample every hour
 #' plan(scheduler, '30 min') # sample every 30 minutes
 #' @export
-plan <- function(x, ...) UseMethod('plan')
+plan <- function(scheduler, ...) UseMethod('plan')
 plan.default <- function(x) warning(paste0('plan cannot handle class ', class(x)))
 
 #' @describeIn plan convenience wrapper around seq.POSIXt

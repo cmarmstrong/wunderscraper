@@ -34,7 +34,7 @@
 .getGeometry <- function(state, county, cellsize) {
     ## TIGER geometries with a factor for grid membership
     geom <- .getTIGRE(state, county)
-    if(!is.na(cellsize)) st_geometry(geom) <- st_union(geom, st_make_grid(gem, cellsize))
+    if(!is.na(cellsize)) st_geometry(geom) <- st_union(geom, st_make_grid(geom, cellsize))
     ## if(cellsize=<0) geom $grid <- 1
     ## else geom $grid <- as.factor(unlist(st_intersects(geom, st_make_grid(geom, cellsize))))
     geom

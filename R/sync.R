@@ -6,7 +6,7 @@
 #' @examples
 #' sync(scheduler)
 #' @export
-sync <- function(x) UseMethod('sync')
+sync <- function(scheduler) UseMethod('sync')
 sync.default <- function(x) warning(paste0('sync cannot handle class ', class(x)))
 
 #' @describeIn sync Sync scheduler's schedule to current time.

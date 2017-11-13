@@ -8,11 +8,11 @@
 #' may use the \code{\link{counter}} constructor function for more control over
 #' API usage limits.
 #'
-#' Scheduler has methods for managing the schedule: \code{\link{check}},
-#'   \code{\link{plan}}, and \code{\link{sync}}.
+#' Scheduler has methods for managing the schedule: \code{\link{plan}}, and
+#' \code{\link{sync}}.
 #' @param counter A \code{\link{counter}} object
 #' @return A scheduler object
-#' @seealso \code{\link{check.scheduler}}, \code{\link{plan.scheduler}}, \code{\link{sync.scheduler}}
+#' @seealso \code{\link{plan.scheduler}}, \code{\link{sync.scheduler}}
 #' @examples
 #' scheduler(counter(plan='drizzle'))
 #' @export
@@ -23,14 +23,14 @@ scheduler <- function(counter=counter()) {
     e
 }
 
-.schedule <- function(x) UseMethod('schedule')
+.schedule <- function(scheduler) UseMethod('schedule')
 .scehdule.default <- function(x) warning(paste0('schedule cannot handle class ', class(x)))
 
 .schedule.scheduler <- function(scheduler) {
     ## schedule and ensure api calls remain within minute and daily limits
     repeat{
         if(scheduler $schedule[1]<Sys.time()) break # wait till start time
-        Sys.sleep(SLEEP)
+        Sys.sleep(Sys.getenv('WUNDERSCRAPER_SLEEP'))
     }
     repeat{
         d <- format(Sys.Date(), tz='America/New_York')
@@ -40,8 +40,8 @@ scheduler <- function(counter=counter()) {
             sync(scheduler)
         }
         if(scheduler $counter $n<DAILYCOUNT) break # daily limits
-        Sys.sleep(SLEEP)
+        Sys.sleep(Sys.getenv('WUNDERSCRAPER_SLEEP'))
     }
     Sys.sleep(61/MINUTECOUNT) # minute limits
-    increment(scheduler $counter)
+    .increment(scheduler $counter)
 }
