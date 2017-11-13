@@ -8,10 +8,13 @@
 #' may use the \code{\link{counter}} constructor function for more control over
 #' API usage limits.
 #'
-#' Scheduler has methods for managing the schedule
-#' @seealso \code{\link{scheduler.check}}, \code{\link{scheduler.plan}}, \code{\link{scheduler.sync}}
+#' Scheduler has methods for managing the schedule: \code{\link{check}},
+#'   \code{\link{plan}}, and \code{\link{sync}}.
 #' @param counter A \code{\link{counter}} object
 #' @return A scheduler object
+#' @seealso \code{\link{check.scheduler}}, \code{\link{plan.scheduler}}, \code{\link{sync.scheduler}}
+#' @examples
+#' scheduler(counter(plan='drizzle'))
 #' @export
 scheduler <- function(counter=counter()) {
     e <- structure(new.env(), class='scheduler') # use environment for reference semantics

@@ -1,10 +1,11 @@
 .onLoad <- function(libname, pkgname) {
     ##             outside us , NY:=005, PR & USVI  , AP         , pacific    , AS
     ## OCONUS <- c(00100:00499,          00600:00999, 96200:96699, 96900:96999, 96799)
-    Sys.setenv(paste0('WUNDERSCRAPER_', c('SLEEP', 'URL', 'WSG84_PROJ')),
-               c(60,                            # sleep time in seconds after failed scheduling
-                 'http://api.wunderground.com',
-                 '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'))
+    wuParameters <- setNames(list(60, # sleep time in seconds after failed scheduling
+                                  'http://api.wunderground.com',
+                                  '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'),
+                             paste0('WUNDERSCRAPER_', c('SLEEP', 'URL', 'WSG84_PROJ')))
+    do.call(Sys.setenv, wuParameters)
 }
 
 .GETjson <- function(url, path) {
@@ -39,7 +40,7 @@
     geom
 }
 
-.getTIGER <- function(state=NULL, county=NULL, cb=TRUE, resolution=20m) {
+.getTIGER <- function(state=NULL, county=NULL, cb=TRUE, resolution='20m') {
     ## state and county must be either NULL or vector valued.
     if(is.null(county)) {
         if(is.null(state)) states(cb=cb, resolution=resolution, class='sf')

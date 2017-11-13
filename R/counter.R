@@ -1,4 +1,4 @@
-#' Counter
+#' Counter.
 #'
 #' Counts API calls and tracks limits
 #'
@@ -6,14 +6,15 @@
 #' scheduler object.  The counter uses reference semantics so that multiple
 #' wunderscraper processes may read and write to the counter object.
 #'
-#' @seealso \code{\link{increment}}
 #' @param plan API usage plan.  Possible values are developer (500 calls a day 10
 #' calls a minute, drizzle (5000 calls a day 100 calls a minute) shower (100000
 #' calls a day 1000 a minute), or custom (see parameters day and minute).
 #' @param day Custom daily API usage limit.
 #' @param minute Custom minute API usage limit.
-#'
 #' @return Returns a counter object.
+#' @seealso \code{\link{increment}}
+#' @examples
+#' counter(plan='drizzle')
 #' @export
 counter <- function(plan='developer', day=NA, minute=NA) {
     e <- structure(new.env(), class='counter')

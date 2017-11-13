@@ -1,6 +1,8 @@
-#' Set API key
+#' Set API key.
 #'
-#' Sets the API key to the value of the argument
+#' Sets the API key to the value of the argument.
+#'
+#' Does not check if key is valid.
 #'
 #' @param key Valid Wunderground API key
 #' @return TRUE if setApiKey succeded
