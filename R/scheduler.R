@@ -26,8 +26,8 @@ scheduler <- function(counter=counter()) {
 .schedule <- function(x) UseMethod('schedule')
 .scehdule.default <- function(x) warning(paste0('schedule cannot handle class ', class(x)))
 
-## schedule and ensure api calls remain within minute and daily limits
 .schedule.scheduler <- function(scheduler) {
+    ## schedule and ensure api calls remain within minute and daily limits
     repeat{
         if(scheduler $schedule[1]<Sys.time()) break # wait till start time
         Sys.sleep(SLEEP)

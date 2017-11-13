@@ -7,8 +7,7 @@ Description: Scrape Wunderground API.  Provides multistage sampling strategies,
     respects API usage limits, and quietly collects and saves Wunderground data
     in the background.
 Depends: R (>= 3.4.1)
-Imports:
-    httr,
+Imports: httr,
     jsonlite,
     sf,
     tigris
