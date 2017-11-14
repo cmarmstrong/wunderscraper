@@ -76,8 +76,9 @@
 #'   degrees.  value of NA specifies no grid.
 #' @param sampleFrame A dataframe relating the queries, weights, and strata to
 #'   each other.  Defaults to \code{\link{zctaRel}}.
-#' @param o A character string specifying output format.  Output to standard out
+#' @param form A character string specifying output format.  Output to standard out
 #'   will always be written in JSON.
+#' @param o A character string specifying output file.
 #' @return Wunderscrape may output the data directly to a file or to standard
 #'   out.  The output can be the JSON payload as recieved from Wunderground, or
 #'   converted to a dataframe, with each complete sample comprising one
@@ -90,15 +91,16 @@
 #' wunderscrape(scheduler())
 #' }
 #' @export
-wunderscrape <- function(scheduler, sampleSize=1, id=c('GEOID', 'ZCTA5', 'id'), strata=c(NA, NA, 'grid'), query='ZCTA5', weight='COPOP', geometry='county', cellsize=0.01, sampleFrame=zctaRel, o='json') {
+wunderscrape <- function(scheduler, sampleSize=1, id=c('GEOID', 'ZCTA5', 'id'), strata=c(NA, NA, 'grid'), query='ZCTA5', weight='COPOP', geometry='county', cellsize=0.01, sampleFrame=wunderscrape::zctaRel, form='json', o) {
     stations <- .getStations(sampleSize, id, strata, query, weight, geometry, cellsize, sampleFrame)
-    dirname <- file.path(DATADIR, paste0(id[1], stations[, id[1]], '-', as.integer(Sys.time())))
+    dirname <- file.path(o, paste0(id[1], stations[, id[1]], '-', as.integer(Sys.time())))
     dir.create(dirname)
     for(station in sample(stations)) { # default sample reorders
-        schedule(scheduler)
-        wuUrn <- .wuPath(getApiKey(), 'conditions', paste('pws', station, sep=':'), 'json')
-        write_json(toJSON(.GETjson(Sys.getenv('WUNDERSCRAPER_URL'), wuUrn)),
-                   file.path(dirname, paste0(station, '-', as.integer(Sys.time()), '.json')))
+        .schedule(scheduler)
+        wuUrn <- .wuPath(.getApiKey(),
+                         'conditions', paste('pws', station, sep=':'), 'json')
+        jsonlite::write_json(jsonlite::toJSON(.GETjson(Sys.getenv('WUNDERSCRAPER_URL'), wuUrn)),
+                             file.path(dirname, paste0(station, '-', as.integer(Sys.time()), '.json')))
     }
     ## sync(scheduler)
 }

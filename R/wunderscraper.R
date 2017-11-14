@@ -12,7 +12,8 @@
 #' \code{\link{counter}}
 #'
 #' @section Wunderscraper methods:
-#' \code{\link{scheduler.plan}}
+#' \code{\link{plan.scheduler}}
+#' \code{\link{sync.scheduler}}
 #'
 #' @docType package
 #' @name wunderscraper
