@@ -18,6 +18,7 @@ scheduler <- function(counter) {
     e <- structure(new.env(), class='scheduler') # use environment for reference semantics
     e $date=format(Sys.Date(), tz='America/New_York')
     e $counter <- counter
+    e $schedule <- seq(strptime(0, '%H'), strptime(23, '%H'), '1 hour') # default schedule
     e
 }
 
