@@ -17,4 +17,5 @@
 #'
 #' @docType package
 #' @name wunderscraper
+#' @importFrom stats setNames
 NULL

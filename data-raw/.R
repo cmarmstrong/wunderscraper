@@ -1,4 +1,6 @@
 zctaRel <- read.csv('data-raw/zcta_county_rel_10.txt', colClasses=c(ZCTA5='character', STATE='character', COUNTY='character', GEOID='character'))
-zctaRel <- zctaRel[, c('ZCTA5', 'GEOID', 'COPOP', 'COAREA', 'COAREALAND')]
+zctaRel $STATE <- substr(zctaRel $GEOID, 1, 2)
+zctaRel $COUNTY <- substr(zctaRel $GEOID, 3, 5)
+zctaRel <- zctaRel[, c('ZCTA5', 'COUNTY', 'STATE', 'COPOP', 'COAREA', 'COAREALAND')]
 
-save(zctaRel, file='R/sysdata.rda')
+save(zctaRel, file='data/zctaRel.rda')

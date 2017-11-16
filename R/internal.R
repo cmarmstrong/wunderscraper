@@ -1,10 +1,10 @@
 .onLoad <- function(libname, pkgname) {
     ##             outside us , NY:=005, PR & USVI  , AP         , pacific    , AS
     ## OCONUS <- c(00100:00499,          00600:00999, 96200:96699, 96900:96999, 96799)
-    wuParameters <- stats::setNames(list(60, # sleep time in seconds after failed scheduling
-                                         'http://api.wunderground.com',
-                                         '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'),
-                                    paste0('WUNDERSCRAPER_', c('SLEEP', 'URL', 'WSG84_PROJ')))
+    wuParameters <- setNames(list(60, # sleep time in seconds after failed scheduling
+                                  'http://api.wunderground.com',
+                                  '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs'),
+                             paste0('WUNDERSCRAPER_', c('SLEEP', 'URL', 'WSG84_PROJ')))
     do.call(Sys.setenv, wuParameters)
 }
 
@@ -50,18 +50,19 @@
 }
 
 .getStations <- function(sampleSize, id, strata, query, weight, geometry, cellsize, sampleFrame) {
+    browser()
     geom <- .getTIGER() # defaults to states
-    sampleParams <- list(sampleSize, id, strata, weight, geometry, cellsize, sampleFrame)
+    sampleParams <- list(sampleSize=sampleSize, id=id, strata=strata,
+                         weight=weight, geometry=geometry, cellsize=cellsize)
     nstages <- max(lengths(sampleParams)) # number of sampling stages
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
     list2env(sampleParams, environment()) # "attach" sampleParams to environment
-    for(i in nstages) { # index the arg vectors by i
+    for(i in 1:nstages) { # index the arg vectors by i
         idFrame <- sampleFrame[!duplicated(sampleFrame[, id[i]]), ]
         if(is.na(sampleSize[i])) idSample <- unique(idFrame $id) # complete sampling
         else if(is.na(strata[i])) { # simple sampling
-            idSample <- with(idFrame,
-                             sample(as.name(id[i]), sampleSize[i], # as.name with idFrame
-                                    replace=FALSE, prob=as.name(weight[i])))
+            idSample <- sample(idFrame[, id[i]], sampleSize[i],
+                               replace=FALSE, prob=idFrame[, weight[i]])
         } else { # stratified sampling
             idSample <- unlist(tapply(sampleFrame, sampleFrame[, strata[i], drop=TRUE],
                                function(strataFrame) {
@@ -69,10 +70,15 @@
                                         sample(as.name(id[i]), sampleSize[i],
                                                replace=FALSE, prob=as.name(weight[i])))}))
         }
-        sampleFrame <- sampleFrame[sampleFrame $id%in%idSample, ]
+        sampleFrame <- sampleFrame[sampleFrame[, id[i]]%in%idSample, ]
+        ## need to get state and county from id?  when id is not GEOID, then what?
+        ## when id is GEOID, get STATE and COUNTY and save them?
         geom <- switch(geometry[i],
-                       county=with(sampleFrame, .getGeometry(STATE, NA, cellsize[i])),
-                       block=with(sampleFrame, .getGeometry(STATE, COUNTY, cellsize[i])),
+                       county=with(sampleFrame, .getGeometry(unique(STATE), NA, cellsize[i])),
+                       block={
+                           fipsFrame <- unique(sampleFrame[, c('COUNTY', 'STATE')])
+                           with(fipsFrame, .getGeometry(STATE, COUNTY, cellsize[i]))
+                       },
                        `NA`=geom)
         sampleFrame <- merge(geom, sampleFrame, by='GEOID') # state GEOID == STATEFP
         if(id[i]==query) {

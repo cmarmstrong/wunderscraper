@@ -6,8 +6,9 @@
 #' @format A data frame with 44410 rows and 5 variables:
 #' \describe{
 #'   \item{ZCTA5}{zip code.}
-#'   \item{GEOID}{5 character string, first 2 characters are the state code and
-#'     last 3 are the county code.}
+#'   \item{COUNTY}{3 character string indicating county Federal Information
+#'     Processing Standard (FIPS) code}
+#'   \item{STATE}{2 character string indicating state FIPS code}
 #'   \item{COPOP}{county population}
 #'   \item{COAREA}{county area}
 #'   \item{COAREALAND}{county area without water surface}
