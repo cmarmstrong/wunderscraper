@@ -36,7 +36,10 @@
 #' geographic features.  When sampling stations, after the Wunderground lookup,
 #' it's often more useful to use a spatial grid for sampling IDs or strata to
 #' ensure the sample acheives sufficient coverage.  Users may also opt for
-#' grid-sampling throughout all sample stages.
+#' grid-sampling throughout all sample stages.  Wunderscraper uses tigris to
+#' fetch state and county geometries during the sampling stages.  The sampling
+#' frame must contain columns \code{STATE} and \code{COUNTY} to specify to
+#' tigris the appropriate geometries.
 #'
 #' Sampling strategies may specify a variable for weighting the sample
 #' probabilities.  Wunderscraper provides state and county populations and land
@@ -67,13 +70,10 @@
 #' @param weight A vector of strings specifying variable names for numeric
 #'   variables that indiciate sampling weights.  NA values specify unweighted
 #'   sampling.
-#' @param geometry A vector of strings specifying tigris geometry functions;
-#'   possible values are states, counties, blocks, or NA.  NA value specifies no
-#'   new geometry and keeps the existing geometry.  The geometries will be
-#'   available to the next stage.  wunderscrape initiates with state geometries.
 #' @param cellsize A vector of numerics specifying cellsize for adding grids to
 #'   TIGER geometries.  TIGER geometries are in the unit of latitude-longitude
-#'   degrees.  value of NA specifies no grid.
+#'   degrees.  value of NA specifies no grid.  The grids will be available to
+#'   the next stage.
 #' @param sampleFrame A dataframe relating the queries, weights, and strata to
 #'   each other.  Defaults to \code{\link{zctaRel}}.
 #' @param form A character string specifying output format.  Output to standard out
@@ -91,8 +91,8 @@
 #' wunderscrape(scheduler())
 #' }
 #' @export
-wunderscrape <- function(scheduler, sampleSize=1, id=c('COUNTY', 'ZCTA5', 'id'), strata=c(NA, NA, 'grid'), query='ZCTA5', weight='COPOP', geometry='county', cellsize=0.01, sampleFrame=wunderscraper::zctaRel, form='json', o) {
-    stations <- .getStations(sampleSize, id, strata, query, weight, geometry, cellsize, sampleFrame)
+wunderscrape <- function(scheduler, sampleSize=1, id=c('GEOID', 'ZCTA5', 'id'), strata=c(NA, NA, 'GRID'), query='ZCTA5', weight='COPOP', cellsize=0.01, sampleFrame=wunderscraper::zctaRel, form='json', o) {
+    stations <- .getStations(sampleSize, id, strata, query, weight, cellsize, sampleFrame)
     dirname <- file.path(o, paste0(id[1], stations[, id[1]], '-', as.integer(Sys.time())))
     dir.create(dirname)
     for(station in sample(stations)) { # default sample reorders

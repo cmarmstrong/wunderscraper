@@ -37,15 +37,20 @@
     if(is.null(county)) {
         if(is.null(state)) tigris::states(cb=cb, resolution=resolution, class='sf')
         else tigris::counties(state=state, cb=cb, resolution=resolution, class='sf')
-    } else tigris::blocks(state=state, county=county) # if !is.null(county) state cannot be null
+    } else tigris::blocks(state=state, county=county, class='sf') # if !is.null(county) state cannot be null
 }
 
 .getGeometry <- function(state, county, cellsize) {
     ## TIGER geometries with a factor for grid membership
     geom <- .getTIGER(state, county)
-    if(!is.na(cellsize)) sf::st_geometry(geom) <- sf::st_union(geom, sf::st_make_grid(geom, cellsize))
-    ## if(cellsize=<0) geom $grid <- 1
-    ## else geom $grid <- as.factor(unlist(st_intersects(geom, st_make_grid(geom, cellsize))))
+    if(!is.na(cellsize)) {
+        if(cellsize<=0) geom $GRID <- 1
+        else {
+            geom <- sf::st_intersection(geom, sf::st_make_grid(geom, cellsize))
+            geom $GRID <- rownames(geom)
+        }
+    }
+    geom $GEOID <- paste0(geom $STATEFP, geom $COUNTYFP)
     geom
 }
 
@@ -58,6 +63,8 @@
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
     list2env(sampleParams, environment()) # "attach" sampleParams to environment
     for(i in 1:nstages) { # index the arg vectors by i
+        ## NOTE doesn't work b/c COUNTY id is nested but sampling is not, needs unique ids
+        ## sampleFrame must contain county FIPS and GEOID for county sampling
         idFrame <- sampleFrame[!duplicated(sampleFrame[, id[i]]), ]
         if(is.na(sampleSize[i])) idSample <- unique(idFrame $id) # complete sampling
         else if(is.na(strata[i])) { # simple sampling
@@ -71,13 +78,9 @@
                                                replace=FALSE, prob=as.name(weight[i])))}))
         }
         sampleFrame <- sampleFrame[sampleFrame[, id[i]]%in%idSample, ]
-        geom <- switch(geometry[i],
-                       county=with(sampleFrame, .getGeometry(unique(STATE), NULL, cellsize[i])),
-                       block={
-                           fipsFrame <- unique(sampleFrame[, c('COUNTY', 'STATE')])
-                           with(fipsFrame, .getGeometry(STATE, COUNTY, cellsize[i]))
-                       },
-                       `NA`=geom)
+        ## no geometry indicator; unecessarily downloads blocks
+        ##   could implement control flow in .getGeometry
+        geom <- with(sampleFrame, .getGeometry(unique(STATE), unique(COUNTY), cellsize[i]))
         sampleFrame <- merge(geom, sampleFrame, by='GEOID') # state GEOID == STATEFP
         if(id[i]==query) {
             geolookups <- .getGeolookup(sampleFrame[, query, drop=TRUE], espg=sf::st_crs(geom))
