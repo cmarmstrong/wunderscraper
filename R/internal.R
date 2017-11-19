@@ -71,10 +71,8 @@
                                                replace=FALSE, prob=as.name(weight[i])))}))
         }
         sampleFrame <- sampleFrame[sampleFrame[, id[i]]%in%idSample, ]
-        ## need to get state and county from id?  when id is not GEOID, then what?
-        ## when id is GEOID, get STATE and COUNTY and save them?
         geom <- switch(geometry[i],
-                       county=with(sampleFrame, .getGeometry(unique(STATE), NA, cellsize[i])),
+                       county=with(sampleFrame, .getGeometry(unique(STATE), NULL, cellsize[i])),
                        block={
                            fipsFrame <- unique(sampleFrame[, c('COUNTY', 'STATE')])
                            with(fipsFrame, .getGeometry(STATE, COUNTY, cellsize[i]))
