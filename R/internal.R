@@ -32,17 +32,23 @@
     sf::st_transform(geolookups, espg)
 }
 
-.getTIGER <- function(state=NULL, county=NULL, cb=TRUE, resolution='20m') {
+.getTIGER <- function(state=NULL, county=NULL, blocks=FALSE, cb=TRUE, resolution='20m') {
     ## state and county must be either NULL or vector valued.
-    if(is.null(county)) {
-        if(is.null(state)) tigris::states(cb=cb, resolution=resolution, class='sf')
-        else tigris::counties(state=state, cb=cb, resolution=resolution, class='sf')
-    } else tigris::blocks(state=state, county=county, class='sf') # if !is.null(county) state cannot be null
+    if(is.null(state)) tigris::states(cb=cb, resolution=resolution, class='sf')
+    else if(blocks) tigris::blocks(state=state, county=county, class='sf')
+    else tigris::counties(state=state, cb=cb, resolution=resolution, class='sf')
+    ## if(is.null(county)) {
+    ##     if(is.null(state)) tigris::states(cb=cb, resolution=resolution, class='sf')
+    ##     else tigris::counties(state=state, cb=cb, resolution=resolution, class='sf')
+    ## } else if(blocks) tigris::blocks(state=state, county=county, class='sf')
+    ## else tigris::counties(state=state, cb=cb, resolution=resolution, class='sf')
+    ## if !is.null(county) state cannot be null
 }
 
-.getGeometry <- function(state, county, cellsize) {
+.getGeometry <- function(state, county, cellsize, blocks=FALSE) {
     ## TIGER geometries with a factor for grid membership
-    geom <- .getTIGER(state, county)
+    geom <- .getTIGER(state, county) # TIGER always has STATEFP & COUNTYFP
+    if(!blocks) geom <- geom[geom $COUNTYFP%in%county, ]
     if(!is.na(cellsize)) {
         if(cellsize<=0) geom $GRID <- 1
         else {
@@ -50,38 +56,40 @@
             geom $GRID <- rownames(geom)
         }
     }
-    geom $GEOID <- paste0(geom $STATEFP, geom $COUNTYFP)
+    geom $GEOID <- paste0(geom $STATEFP, geom $COUNTYFP) # safety
     geom
 }
 
-.getStations <- function(sampleSize, id, strata, query, weight, geometry, cellsize, sampleFrame) {
+.getStations <- function(sampleSize, id, strata, query, weight, cellsize, sampleFrame) {
     browser()
     geom <- .getTIGER() # defaults to states
-    sampleParams <- list(sampleSize=sampleSize, id=id, strata=strata,
-                         weight=weight, geometry=geometry, cellsize=cellsize)
+    sampleParams <- list(sampleSize=sampleSize, id=id, strata=strata, weight=weight, cellsize=cellsize)
     nstages <- max(lengths(sampleParams)) # number of sampling stages
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
     list2env(sampleParams, environment()) # "attach" sampleParams to environment
     for(i in 1:nstages) { # index the arg vectors by i
-        ## NOTE doesn't work b/c COUNTY id is nested but sampling is not, needs unique ids
-        ## sampleFrame must contain county FIPS and GEOID for county sampling
-        idFrame <- sampleFrame[!duplicated(sampleFrame[, id[i]]), ]
-        if(is.na(sampleSize[i])) idSample <- unique(idFrame $id) # complete sampling
+        ## this could go in a .getIdframe function so that it can be repeated in all sampling conditions
+        ## use unique here to avoid using it below
+        ## idFrame <- unique(sampleFrame[, id[i], drop=TRUE])
+        idFrame <- sampleFrame[, id[i]]
+        ## drop geometry then use !duplicated
+        st_geometry(idFrame) <- NULL
+        ## unique(sampleFrame[sampleFrame[, id[i]]%in%idFrame, weight[i], drop=TRUE])
+        idFrame <- idFrame[!duplicated(idFrame[, id[i]]), ] # PROBLEM: washes out strata
+        if(is.na(sampleSize[i])) idSample <- idFrame[, id[i]] # complete sampling
         else if(is.na(strata[i])) { # simple sampling
-            idSample <- sample(idFrame[, id[i]], sampleSize[i],
-                               replace=FALSE, prob=idFrame[, weight[i]])
+            idSample <- sample(idFrame[, id[i]], sampleSize[i], prob=idFrame[, weight[i]])
         } else { # stratified sampling
-            idSample <- unlist(tapply(sampleFrame, sampleFrame[, strata[i], drop=TRUE],
-                               function(strataFrame) {
-                                   with(strataFrame,
-                                        sample(as.name(id[i]), sampleSize[i],
-                                               replace=FALSE, prob=as.name(weight[i])))}))
+            idSample <- unlist(tapply(sampleFrame, sampleFrame[, strata[i]],
+                                      function(strataFrame) {
+                                          ## must do to strataFrame what was done to idFrame
+                                          sample(unique(strataFrame[, id[i], drop=TRUE]), sampleSize[i],
+                                                 prob=strataFrame[, weight[i]])
+                                      }))
         }
         sampleFrame <- sampleFrame[sampleFrame[, id[i]]%in%idSample, ]
-        ## no geometry indicator; unecessarily downloads blocks
-        ##   could implement control flow in .getGeometry
         geom <- with(sampleFrame, .getGeometry(unique(STATE), unique(COUNTY), cellsize[i]))
-        sampleFrame <- merge(geom, sampleFrame, by='GEOID') # state GEOID == STATEFP
+        sampleFrame <- merge(geom, sampleFrame, by='GEOID') # PROBLEM: state GEOID == STATEFP
         if(id[i]==query) {
             geolookups <- .getGeolookup(sampleFrame[, query, drop=TRUE], espg=sf::st_crs(geom))
             geolookups <- sf::st_intersection(geolookups, geom)
