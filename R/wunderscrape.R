@@ -74,8 +74,6 @@
 #'   TIGER geometries.  TIGER geometries are in the unit of latitude-longitude
 #'   degrees.  value of NA specifies no grid.  The grids will be available to
 #'   the next stage.
-#' @param sampleFrame A dataframe relating the queries, weights, and strata to
-#'   each other.  Defaults to \code{\link{zctaRel}}.
 #' @param form A character string specifying output format.  Output to standard out
 #'   will always be written in JSON.
 #' @param o A character string specifying output file.
@@ -88,11 +86,11 @@
 #' @seealso \code{\link[rwunderground]{conditions}}
 #' @examples
 #' \dontrun{
-#' wunderscrape(scheduler())
+#' wunderscrape(scheduler(counter()))
 #' }
 #' @export
-wunderscrape <- function(scheduler, sampleSize=1, id=c('GEOID', 'ZCTA5', 'id'), strata=c(NA, NA, 'GRID'), query='ZCTA5', weight='COPOP', cellsize=0.01, sampleFrame=wunderscraper::zctaRel, form='json', o) {
-    stations <- .getStations(sampleSize, id, strata, query, weight, cellsize, sampleFrame)
+wunderscrape <- function(scheduler, sampleSize=1, id=c('GEOID', 'ZCTA5', 'id'), strata=c(NA, NA, 'GRID'), query='ZCTA5', weight='COPOP', cellsize=0.01, form='json', o) {
+    stations <- .getStations(sampleSize, id, strata, query, weight, cellsize)
     dirname <- file.path(o, paste0(id[1], stations[, id[1]], '-', as.integer(Sys.time())))
     dir.create(dirname)
     for(station in sample(stations)) { # default sample reorders

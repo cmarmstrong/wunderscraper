@@ -60,22 +60,21 @@
     geom
 }
 
-.getStations <- function(sampleSize, id, strata, query, weight, cellsize, sampleFrame) {
+.getStations <- function(sampleSize, id, strata, query, weight, cellsize) {
     browser()
-    geom <- .getTIGER() # defaults to states
+    sampleFrame <- wunderscraper::zctaRel
+    geom <- .getTIGER()
+    geom $GEOID <- NULL # state GEOID == STATEFP
+    sampleFrame <- merge(geom, sampleFrame, by.x='STATEFP', by.y='STATE')
     sampleParams <- list(sampleSize=sampleSize, id=id, strata=strata, weight=weight, cellsize=cellsize)
     nstages <- max(lengths(sampleParams)) # number of sampling stages
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
     list2env(sampleParams, environment()) # "attach" sampleParams to environment
     for(i in 1:nstages) { # index the arg vectors by i
-        ## this could go in a .getIdframe function so that it can be repeated in all sampling conditions
-        ## use unique here to avoid using it below
-        ## idFrame <- unique(sampleFrame[, id[i], drop=TRUE])
-        idFrame <- sampleFrame[, id[i]]
-        ## drop geometry then use !duplicated
-        st_geometry(idFrame) <- NULL
+        idFrame <- sampleFrame[, c(id[i], weight[i])]
+        sf::st_geometry(idFrame) <- NULL # drop geometry then use !duplicated
         ## unique(sampleFrame[sampleFrame[, id[i]]%in%idFrame, weight[i], drop=TRUE])
-        idFrame <- idFrame[!duplicated(idFrame[, id[i]]), ] # PROBLEM: washes out strata
+        idFrame <- idFrame[!duplicated(idFrame[, id[i]]), c(id[i], weight[i])]
         if(is.na(sampleSize[i])) idSample <- idFrame[, id[i]] # complete sampling
         else if(is.na(strata[i])) { # simple sampling
             idSample <- sample(idFrame[, id[i]], sampleSize[i], prob=idFrame[, weight[i]])
@@ -87,7 +86,7 @@
                                                  prob=strataFrame[, weight[i]])
                                       }))
         }
-        sampleFrame <- sampleFrame[sampleFrame[, id[i]]%in%idSample, ]
+        sampleFrame <- sampleFrame[sampleFrame[, id[i]]%in%idSample, ] # %in%.sf crash?
         geom <- with(sampleFrame, .getGeometry(unique(STATE), unique(COUNTY), cellsize[i]))
         sampleFrame <- merge(geom, sampleFrame, by='GEOID') # PROBLEM: state GEOID == STATEFP
         if(id[i]==query) {

@@ -9,9 +9,8 @@
 #'   \item{COUNTY}{3 character string indicating county Federal Information
 #'     Processing Standard (FIPS) code}
 #'   \item{STATE}{2 character string indicating state FIPS code}
+#'   \item{GEOID}{5 character string concatonating STATE and COUNTY}
 #'   \item{COPOP}{county population}
-#'   \item{COAREA}{county area}
-#'   \item{COAREALAND}{county area without water surface}
 #' }
 #' @source \url{https://www2.census.gov/geo/docs/maps-data/data/rel/zcta_county_rel_10.txt}
 #' @examples
