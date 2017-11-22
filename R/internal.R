@@ -37,12 +37,6 @@
     if(is.null(state)) tigris::states(cb=cb, resolution=resolution, class='sf')
     else if(blocks) tigris::blocks(state=state, county=county, class='sf')
     else tigris::counties(state=state, cb=cb, resolution=resolution, class='sf')
-    ## if(is.null(county)) {
-    ##     if(is.null(state)) tigris::states(cb=cb, resolution=resolution, class='sf')
-    ##     else tigris::counties(state=state, cb=cb, resolution=resolution, class='sf')
-    ## } else if(blocks) tigris::blocks(state=state, county=county, class='sf')
-    ## else tigris::counties(state=state, cb=cb, resolution=resolution, class='sf')
-    ## if !is.null(county) state cannot be null
 }
 
 .getGeometry <- function(state, county, cellsize, blocks=FALSE) {
@@ -66,6 +60,7 @@
     geom <- .getTIGER()
     geom $GEOID <- NULL # state GEOID == STATEFP
     sampleFrame <- merge(geom, sampleFrame, by.x='STATEFP', by.y='STATE')
+    names(sampleFrame)[names(sampleFrame)=='STATEFP'] <- 'STATE'
     sampleParams <- list(sampleSize=sampleSize, id=id, strata=strata, weight=weight, cellsize=cellsize)
     nstages <- max(lengths(sampleParams)) # number of sampling stages
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
@@ -86,9 +81,11 @@
                                                  prob=strataFrame[, weight[i]])
                                       }))
         }
-        sampleFrame <- sampleFrame[sampleFrame[, id[i]]%in%idSample, ] # %in%.sf crash?
+        sampleFrame <- sampleFrame[sampleFrame[, id[i], drop=TRUE]%in%idSample, ]
         geom <- with(sampleFrame, .getGeometry(unique(STATE), unique(COUNTY), cellsize[i]))
-        sampleFrame <- merge(geom, sampleFrame, by='GEOID') # PROBLEM: state GEOID == STATEFP
+        ## drop geometry and merge; intersection unecessary and lengthy
+        sf::st_geometry(sampleFrame) <- NULL
+        sampleFrame <- merge(geom, sampleFrame, by='GEOID', suffixes=c('', '.previous'))
         if(id[i]==query) {
             geolookups <- .getGeolookup(sampleFrame[, query, drop=TRUE], espg=sf::st_crs(geom))
             geolookups <- sf::st_intersection(geolookups, geom)
