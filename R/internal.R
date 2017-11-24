@@ -54,6 +54,13 @@
     geom
 }
 
+.getSampleFrame <- function(sampleFrame, id, weight) {
+    sampleFrame <- ifelse(weight, sampleFrame[, c(id, weight)],
+                          data.frame(id=sampleFrame $id, weight=1))
+    sf::st_geometry(sampleFrame) <- NULL
+    sampleFrame[!duplicated(sampleFrame), ]
+}
+
 .getStations <- function(sampleSize, id, strata, query, weight, cellsize) {
     browser()
     sampleFrame <- wunderscraper::zctaRel
@@ -66,10 +73,11 @@
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
     list2env(sampleParams, environment()) # "attach" sampleParams to environment
     for(i in 1:nstages) { # index the arg vectors by i
-        idFrame <- sampleFrame[, c(id[i], weight[i])]
-        sf::st_geometry(idFrame) <- NULL # drop geometry then use !duplicated
+        idFrame <- .getSampleFrame(sampleFrame, id, weight)
+        ## idFrame <- sampleFrame[, c(id[i], weight[i])]
+        ## sf::st_geometry(idFrame) <- NULL # drop geometry then use !duplicated
         ## unique(sampleFrame[sampleFrame[, id[i]]%in%idFrame, weight[i], drop=TRUE])
-        idFrame <- idFrame[!duplicated(idFrame[, id[i]]), c(id[i], weight[i])]
+        ## idFrame <- idFrame[!duplicated(idFrame[, id[i]]), ]
         if(is.na(sampleSize[i])) idSample <- idFrame[, id[i]] # complete sampling
         else if(is.na(strata[i])) { # simple sampling
             idSample <- sample(idFrame[, id[i]], sampleSize[i], prob=idFrame[, weight[i]])
@@ -77,6 +85,7 @@
             idSample <- unlist(tapply(sampleFrame, sampleFrame[, strata[i]],
                                       function(strataFrame) {
                                           ## must do to strataFrame what was done to idFrame
+                                          strataFrame <- .getSampleFrame(strataFrame)
                                           sample(unique(strataFrame[, id[i], drop=TRUE]), sampleSize[i],
                                                  prob=strataFrame[, weight[i]])
                                       }))
