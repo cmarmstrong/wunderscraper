@@ -55,10 +55,10 @@
 }
 
 .getSampleFrame <- function(sampleFrame, id, weight) {
-    sampleFrame <- ifelse(weight, sampleFrame[, c(id, weight)],
-                          data.frame(id=sampleFrame $id, weight=1))
-    sf::st_geometry(sampleFrame) <- NULL
-    sampleFrame[!duplicated(sampleFrame), ]
+    sampleFrame[, 'id'] <- sampleFrame[, id]
+    sampleFrame[, 'weight'] <- ifelse(is.na(weight), 1, sampleFrame[, weight])
+    ## sf::st_geometry(sampleFrame) <- NULL
+    sampleFrame[!duplicated(sampleFrame[, id]), c('id', 'weight')]
 }
 
 .getStations <- function(sampleSize, id, strata, query, weight, cellsize) {
@@ -66,35 +66,30 @@
     sampleFrame <- wunderscraper::zctaRel
     geom <- .getTIGER()
     geom $GEOID <- NULL # state GEOID == STATEFP
-    sampleFrame <- merge(geom, sampleFrame, by.x='STATEFP', by.y='STATE')
+    ## sampleFrame <- merge(geom, sampleFrame, by.x='STATEFP', by.y='STATE')
     names(sampleFrame)[names(sampleFrame)=='STATEFP'] <- 'STATE'
     sampleParams <- list(sampleSize=sampleSize, id=id, strata=strata, weight=weight, cellsize=cellsize)
     nstages <- max(lengths(sampleParams)) # number of sampling stages
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
     list2env(sampleParams, environment()) # "attach" sampleParams to environment
     for(i in 1:nstages) { # index the arg vectors by i
-        idFrame <- .getSampleFrame(sampleFrame, id, weight)
-        ## idFrame <- sampleFrame[, c(id[i], weight[i])]
-        ## sf::st_geometry(idFrame) <- NULL # drop geometry then use !duplicated
-        ## unique(sampleFrame[sampleFrame[, id[i]]%in%idFrame, weight[i], drop=TRUE])
-        ## idFrame <- idFrame[!duplicated(idFrame[, id[i]]), ]
-        if(is.na(sampleSize[i])) idSample <- idFrame[, id[i]] # complete sampling
+        idFrame <- .getSampleFrame(sampleFrame, id[i], weight[i])
+        if(is.na(sampleSize[i])) idSample <- idFrame $id # complete sampling
         else if(is.na(strata[i])) { # simple sampling
-            idSample <- sample(idFrame[, id[i]], sampleSize[i], prob=idFrame[, weight[i]])
+            idSample <- with(idFrame, sample(id, sampleSize[i], prob=weight))
         } else { # stratified sampling
             idSample <- unlist(tapply(sampleFrame, sampleFrame[, strata[i]],
                                       function(strataFrame) {
-                                          ## must do to strataFrame what was done to idFrame
                                           strataFrame <- .getSampleFrame(strataFrame)
-                                          sample(unique(strataFrame[, id[i], drop=TRUE]), sampleSize[i],
-                                                 prob=strataFrame[, weight[i]])
-                                      }))
+                                          with(strataFrame,
+                                               sample(id, sampleSize[i], prob=weight))
+                                          }))
         }
         sampleFrame <- sampleFrame[sampleFrame[, id[i], drop=TRUE]%in%idSample, ]
         geom <- with(sampleFrame, .getGeometry(unique(STATE), unique(COUNTY), cellsize[i]))
         ## drop geometry and merge; intersection unecessary and lengthy
-        sf::st_geometry(sampleFrame) <- NULL
-        sampleFrame <- merge(geom, sampleFrame, by='GEOID', suffixes=c('', '.previous'))
+        ## sf::st_geometry(sampleFrame) <- NULL
+        ## sampleFrame <- merge(geom, sampleFrame, by='GEOID', suffixes=c('', '.previous'))
         if(id[i]==query) {
             geolookups <- .getGeolookup(sampleFrame[, query, drop=TRUE], espg=sf::st_crs(geom))
             geolookups <- sf::st_intersection(geolookups, geom)
