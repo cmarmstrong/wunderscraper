@@ -60,13 +60,11 @@
 #'   sampling with replacement and subsequent stages are complete sampling.  If
 #'   not specified for all stages then unspecified stages are assumed complete
 #'   sampling.
-#' @param id A vector of strings specifying variable names for cluster ids.  One
-#'   of the stages must match the query parameter, and the last stage must be
-#'   "id"
+#' @param id A vector of strings specifying variable names for cluster ids.  The
+#'   unit ids of the last stage will also supply the `q' parameters for
+#'   Wunderground geolookups.
 #' @param strata A vector of strings specifying variable names for strata.  NA
 #'   values indicate simple sampling.
-#' @param query A string specifying the `q' parameter within a Wunderground
-#'   geolookup.  The query must also be specified as a stage in the id vector.
 #' @param weight A vector of strings specifying variable names for numeric
 #'   variables that indiciate sampling weights.  NA values specify unweighted
 #'   sampling.
@@ -89,8 +87,8 @@
 #' wunderscrape(scheduler(counter()))
 #' }
 #' @export
-wunderscrape <- function(scheduler, sampleSize=1, id=c('GEOID', 'ZCTA5', 'id'), strata=c(NA, NA, 'GRID'), query='ZCTA5', weight='COPOP', cellsize=c(NA, 0.01), form='json', o) {
-    stations <- .getStations(sampleSize, id, strata, query, weight, cellsize)
+wunderscrape <- function(scheduler, sampleSize=1, id=c('GEOID', 'ZCTA5'), strata=c(NA, NA, 'GRID'), weight='COPOP', cellsize=c(NA, 0.01), form='json', o) {
+    stations <- .getStations(scheduler, sampleSize, id, strata, weight, cellsize)
     dirname <- file.path(o, paste0(id[1], stations[, id[1]], '-', as.integer(Sys.time())))
     dir.create(dirname)
     for(station in sample(stations)) { # default sample reorders

@@ -22,8 +22,8 @@ scheduler <- function(counter) {
     e
 }
 
-.schedule <- function(scheduler) UseMethod('schedule')
-.scehdule.default <- function(x) warning(paste0('schedule cannot handle class ', class(x)))
+.schedule <- function(scheduler) UseMethod('.schedule')
+.scehdule.default <- function(x) warning(paste0('.schedule cannot handle class ', class(x)))
 
 .schedule.scheduler <- function(scheduler) {
     ## schedule and ensure api calls remain within minute and daily limits

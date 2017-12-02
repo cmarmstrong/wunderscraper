@@ -13,10 +13,10 @@
     jsonlite::fromJSON(rawToChar(response $content))
 }
 
-.getGeolookup <- function(queries, espg) {
+.getGeolookup <- function(scheduler, queries, espg) {
     ## returns sf with station id and POINT geometry columns
     geolookups <- lapply(unique(queries), function(query) {
-        .schedule(scheduler)
+        wunderscraper::.schedule(scheduler)
         geolookup <- .GETjson(Sys.getenv('WUNDERSCRAPER_URL'),
                               .wuPath(.getApiKey(), 'geolookup', query, 'json'))
         if(!is.null(geolookup $response $error)) return(NA)
@@ -61,15 +61,13 @@
     sampleFrame[!duplicated(sampleFrame[, id]), c('id', 'weight')]
 }
 
-.getStations <- function(sampleSize, id, strata, query, weight, cellsize) {
+.getStations <- function(scheduler, sampleSize, id, strata, weight, cellsize) {
     browser()
     sampleFrame <- wunderscraper::zctaRel
-    geom <- .getTIGER()
-    geom $GEOID <- NULL # state GEOID == STATEFP
-    ## sampleFrame <- merge(geom, sampleFrame, by.x='STATEFP', by.y='STATE')
     names(sampleFrame)[names(sampleFrame)=='STATEFP'] <- 'STATE'
     sampleParams <- list(sampleSize=sampleSize, id=id, strata=strata, weight=weight, cellsize=cellsize)
-    nstages <- max(lengths(sampleParams)) # number of sampling stages
+    ## nstages <- max(lengths(sampleParams)) # number of sampling stages
+    nstages <- length(sampleParams $id) + 1
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
     list2env(sampleParams, environment()) # "attach" sampleParams to environment
     for(i in 1:nstages) { # index the arg vectors by i
@@ -78,23 +76,23 @@
         else if(is.na(strata[i])) { # simple sampling
             idSample <- with(idFrame, sample(id, sampleSize[i], prob=weight))
         } else { # stratified sampling
-            idSample <- unlist(tapply(sampleFrame, sampleFrame[, strata[i]],
-                                      function(strataFrame) {
-                                          strataFrame <- .getSampleFrame(strataFrame)
-                                          with(strataFrame,
-                                               sample(id, sampleSize[i], prob=weight))
-                                          }))
+            getStrataFrame <- function(strataFrame) { # .getSampleFrame for each strata
+                with(.getSampleFrame(strataFrame), sample(id, sampleSize[i], prob=weight))
+            }
+            idSample <- unlist(tapply(sampleFrame, sampleFrame[, strata[i]], getStrataFrame))
         }
         sampleFrame <- sampleFrame[sampleFrame[, id[i], drop=TRUE]%in%idSample, ]
-        geom <- with(sampleFrame, .getGeometry(unique(STATE), unique(COUNTY), cellsize[i]))
-        ## drop geometry and merge; intersection unecessary and lengthy
-        ## sf::st_geometry(sampleFrame) <- NULL
-        ## sampleFrame <- merge(geom, sampleFrame, by='GEOID', suffixes=c('', '.previous'))
-        if(id[i]==query) {
-            geolookups <- .getGeolookup(sampleFrame[, query, drop=TRUE], espg=sf::st_crs(geom))
+        if(!is.na(cellsize[i])) { # add grids of cellsize
+            geom <- with(sampleFrame, .getGeometry(unique(STATE), unique(COUNTY), cellsize[i]))
+            sampleFrame <- merge(geom, sampleFrame, by='GEOID', suffixes=c('', '.previous'))
+        }
+        if(i==nstages-1) { # wunderground geolookup
+            geom <- with(sampleFrame, .getGeometry(unique(STATE), unique(COUNTY), NA))
+            geolookups <- .getGeolookup(scheduler,
+                                        sampleFrame[, id[i], drop=TRUE], espg=sf::st_crs(geom))
             geolookups <- sf::st_intersection(geolookups, geom)
-            geolookups $query <- query
-            ## intersection with grid?
+            geolookups $query <- id[i]
+            ## intersection with grid? next loop is station sample, how to prepare?
             sampleFrame <- merge(geolookups, sampleFrame, by.x='query', by.y=as.name(query))
         }
     }
