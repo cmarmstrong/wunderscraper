@@ -86,7 +86,7 @@
 #' \dontrun{
 #' schedulerMMDD <- scheduler(counter())
 #' wunderscrape(schedulerMMDD, c("GEOID", "ZCAT5"), size=c(1, NA, 1), strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
-#' wunderscrape(schedulerMMDD, c("STATE", "GRID", "ZCAT5"), size=c(NA, 1, 10, 1), strata=c(NA, NA, NA, "GRID"), weight=NA, cellsize=c(1, NA, 0.01))
+#' wunderscrape(schedulerMMDD, c("STATE", "GRID", "ZCAT5"), size=c(NA, 1, 10, 1), strata=c(NA, NA, NA, "GRID"), cellsize=c(1, NA, 0.01))
 #' }
 #' @export
 wunderscrape <- function(scheduler, id, size=NA, strata=NA, weight=NA, cellsize=NA, form='json', o=NA) {
