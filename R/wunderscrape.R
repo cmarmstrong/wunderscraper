@@ -87,8 +87,9 @@
 #' wunderscrape(scheduler(counter()))
 #' }
 #' @export
-wunderscrape <- function(scheduler, sampleSize=1, id=c('GEOID', 'ZCTA5'), strata=c(NA, NA, 'GRID'), weight='COPOP', cellsize=c(NA, 0.01), form='json', o) {
-    stations <- .getStations(scheduler, sampleSize, id, strata, weight, cellsize)
+wunderscrape <- function(scheduler, size=c(1, NA, 1), id=c('GEOID', 'ZCTA5'), strata=c(NA, NA, 'GRID'), weight='COPOP', cellsize=c(NA, 0.01), form='json', o) {
+    stations <- .getStations(scheduler, size, id, strata, weight, cellsize)
+    stop('success!')
     dirname <- file.path(o, paste0(id[1], stations[, id[1]], '-', as.integer(Sys.time())))
     dir.create(dirname)
     for(station in sample(stations)) { # default sample reorders
