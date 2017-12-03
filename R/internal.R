@@ -63,7 +63,7 @@
     sampleFrame[!duplicated(sampleFrame[, id]), c('id', 'weight')]
 }
 
-.getStations <- function(scheduler, size, id, strata, weight, cellsize) {
+.getStations <- function(scheduler, id, size, strata, weight, cellsize) {
     sampleFrame <- wunderscraper::zctaRel
     geom <- .getTIGER() # default TIGER state geometries
     geom $GEOID <- NULL # state GEOID == STATEFP

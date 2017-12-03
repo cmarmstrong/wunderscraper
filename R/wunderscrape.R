@@ -55,14 +55,14 @@
 #' json to a file or convert each complete sample to a dataframe.
 #'
 #' @param scheduler A scheduler object.
-#' @param sampleSize A vector of integers specifying sample size at each stage.
+#' @param id A vector of strings specifying variable names for cluster ids.  The
+#'   unit ids of the last stage will also supply the `q' parameters for
+#'   Wunderground geolookups.
+#' @param size A vector of integers specifying sample size at each stage.
 #'   NA values specify complete sampling.  When missing the top stage is assumed
 #'   sampling with replacement and subsequent stages are complete sampling.  If
 #'   not specified for all stages then unspecified stages are assumed complete
 #'   sampling.
-#' @param id A vector of strings specifying variable names for cluster ids.  The
-#'   unit ids of the last stage will also supply the `q' parameters for
-#'   Wunderground geolookups.
 #' @param strata A vector of strings specifying variable names for strata.  NA
 #'   values indicate simple sampling.
 #' @param weight A vector of strings specifying variable names for numeric
@@ -84,11 +84,13 @@
 #' @seealso \code{\link[rwunderground]{conditions}}
 #' @examples
 #' \dontrun{
-#' wunderscrape(scheduler(counter()))
+#' schedulerMMDD <- scheduler(counter())
+#' wunderscrape(schedulerMMDD, c("GEOID", "ZCAT5"), size=c(1, NA, 1), strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
+#' wunderscrape(schedulerMMDD, c("STATE", "GRID", "ZCAT5"), size=c(NA, 1, 10, 1), strata=c(NA, NA, NA, "GRID"), weight=NA, cellsize=c(1, NA, 0.01))
 #' }
 #' @export
-wunderscrape <- function(scheduler, size=c(1, NA, 1), id=c('GEOID', 'ZCTA5'), strata=c(NA, NA, 'GRID'), weight='COPOP', cellsize=c(NA, 0.01), form='json', o) {
-    stations <- .getStations(scheduler, size, id, strata, weight, cellsize)
+wunderscrape <- function(scheduler, id, size=NA, strata=NA, weight=NA, cellsize=NA, form='json', o=NA) {
+    stations <- .getStations(scheduler, id, size, strata, weight, cellsize)
     stop('success!')
     dirname <- file.path(o, paste0(id[1], stations[, id[1]], '-', as.integer(Sys.time())))
     dir.create(dirname)
