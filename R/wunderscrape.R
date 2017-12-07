@@ -85,21 +85,17 @@
 #' @examples
 #' \dontrun{
 #' schedulerMMDD <- scheduler(counter())
-#' wunderscrape(schedulerMMDD, c("GEOID", "ZCAT5"), size=c(1, NA, 1), strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
-#' wunderscrape(schedulerMMDD, c("STATE", "GRID", "ZCAT5"), size=c(NA, 1, 10, 1), strata=c(NA, NA, NA, "GRID"), cellsize=c(1, NA, 0.01))
+#' wunderscrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1), strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
+#' wunderscrape(schedulerMMDD, c("STATE", "GRID", "ZCTA5"), size=c(2, 1, 5, 1), strata=c(NA, NA, NA, "GRID"), cellsize=c(10, NA, 0.01))
 #' }
 #' @export
 wunderscrape <- function(scheduler, id, size=NA, strata=NA, weight=NA, cellsize=NA, form='json', o=NA) {
     stations <- .getStations(scheduler, id, size, strata, weight, cellsize)
     stop('success!')
-    dirname <- file.path(o, paste0(id[1], stations[, id[1]], '-', as.integer(Sys.time())))
-    dir.create(dirname)
+    if(!is.na(o)) dir.create(o)
     for(station in sample(stations)) { # default sample reorders
         .schedule(scheduler)
-        wuUrn <- .wuPath(.getApiKey(),
-                         'conditions', paste('pws', station, sep=':'), 'json')
-        jsonlite::write_json(jsonlite::toJSON(.GETjson(Sys.getenv('WUNDERSCRAPER_URL'), wuUrn)),
-                             file.path(dirname, paste0(station, '-', as.integer(Sys.time()), '.json')))
+        .scrapeOut(form, o, station)
     }
     ## sync(scheduler)
 }

@@ -13,6 +13,18 @@
     jsonlite::fromJSON(rawToChar(response $content))
 }
 
+.scrapeOut <- function(form, o, station) {
+    wuUrn <- .wuPath(.getApiKey(), 'conditions', paste('pws', station, sep=':'), 'json')
+    if(is.na(o)) writeLines(jsonlite::toJSON(.GETjson(Sys.getenv('WUNDERSCRAPER_URL'), wuUrn)))
+    else if(form=='json') {
+        content <- jsonlite::toJSON(.GETjson(Sys.getenv('WUNDERSCRAPER_URL'), wuUrn))
+        fpath <- file.path(o, paste0(station, '-', as.integer(Sys.time()), '.json'))
+        jsonlite::write_json(content, fpath)
+    } else if(form=='data.frame') {
+        stop('not implemented')
+    }   
+}
+
 .wuPath <- function(key, feature, id, format) {
     paste(paste('api', key, feature, 'q', id, sep='/'), format, sep='.')
 }
@@ -57,7 +69,7 @@
 }
 
 .getSampleFrame <- function(sampleFrame, id, weight) {
-    sampleFrame[, 'id'] <- sampleFrame[, id]
+    sampleFrame[, 'id'] <- sampleFrame[, id, drop=TRUE]
     sampleFrame[, 'weight'] <- ifelse(is.na(weight), 1, sampleFrame[, weight])
     sf::st_geometry(sampleFrame) <- NULL # sampleFrame is sf
     sampleFrame[!duplicated(sampleFrame[, id]), c('id', 'weight')]
@@ -79,6 +91,7 @@
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
     list2env(sampleParams, environment()) # "attach" sampleParams to environment
     for(i in 1:nstages) { # index the arg vectors by i
+        browser()
         idFrame <- .getSampleFrame(sampleFrame, id[i], weight[i]) # drops geometry
         if(is.na(size[i])) idSample <- idFrame $id # complete sampling
         else if(is.na(strata[i])) { # simple sampling
