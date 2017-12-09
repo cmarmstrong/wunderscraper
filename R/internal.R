@@ -53,9 +53,10 @@
     else tigris::counties(state=state, cb=cb, resolution=resolution, class='sf')
 }
 
-.getGeometry <- function(state, county, cellsize, blocks=FALSE) {
+.getGeometry <- function(geoid, cellsize, blocks=FALSE) {
     ## TIGER geometries with a factor for grid membership
-    geom <- .getTIGER(state, county) # TIGER always has STATEFP & COUNTYFP
+    geom <- do.call(.getTIGER, substr(geoid, 1, 2), substr(geoid, 3, 5))
+    ## geom <- .getTIGER(state, county)
     if(!blocks) geom <- geom[geom $COUNTYFP%in%county, ]
     if(!is.na(cellsize)) {
         if(cellsize<=0) geom $GRID <- 1
@@ -90,8 +91,8 @@
     else if(id[nstages]!='id') stop('id of last stage must equal "id" or nothing')
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
     list2env(sampleParams, environment()) # "attach" sampleParams to environment
+    browser()
     for(i in 1:nstages) { # index the arg vectors by i
-        browser()
         idFrame <- .getSampleFrame(sampleFrame, id[i], weight[i]) # drops geometry
         if(is.na(size[i])) idSample <- idFrame $id # complete sampling
         else if(is.na(strata[i])) { # simple sampling
@@ -105,7 +106,7 @@
         }
         sampleFrame <- sampleFrame[sampleFrame[, id[i], drop=TRUE]%in%idSample, ] # has geometry
         if(!is.na(cellsize[i])) { # add grids of cellsize
-            geom <- with(sampleFrame, .getGeometry(unique(STATE), unique(COUNTY), cellsize[i]))
+            geom <- with(sampleFrame, .getGeometry(unique(GEOID), cellsize[i]))
             sampleFrame <- sf::st_intersection(geom, sampleFrame)
         }
         if(i==nstages-1) { # wunderground geolookup
