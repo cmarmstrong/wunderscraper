@@ -1,45 +1,24 @@
 #' Scrape wunderground API
 #'
-#' Uses a sampling strategy to scrape wunderground API.
+#' Scrape wunderground API with a sampling strategy based on states, counties,
+#' zip codes, or a grid.
 #'
-#' Wunderscrape scrapes wunderground API with a user provided sampling strategy.
-#' The sampling strategy has two necessary components:
-#' \enumerate{
-#'   \item A sampling frame defining the spatial area or units from which a sample
-#'     will be taken.
-#'   \item A possibly multistage sampling strategy for selecting weather stations
-#'     within the spatial sampling frame.
-#' }
+#' Wunderscrape scrapes wunderground API with a possibly multistage sampling
+#' strategy for selecting weather stations.  The sampling strategy has one
+#' constraint: the last stage of the strategy must be: zip code, city name, or
+#' latitude/longitude.  This is because these are the units by which the
+#' wunderground API queries weather stations within a spatial area.
 #'
-#' The sampling strategy has one constraint:
-#' \enumerate{
-#'   \item The data in the sampling frame must have a relationship for at least
-#'     one of: zip code, city name, or latitude/longitude; named in the query
-#'     parameter.
-#' }
-#' This is because these are the units by which the wunderground API queries
-#' weather stations within a spatial area.
-#'
-#' In addition to these requirements and constraints, users can specify sampling
-#' weights, strata, and spatial grids to use as stages or strata.
+#' In addition to sampling stages, users may specify weights, strata, and
+#' spatial grids to use as stages or strata.
 #'
 #' Users specify a sampling strategy through a set of vector-valued arguments
-#' that indicate the sampling sizes, stages, strata, weights, geometries, and
-#' frame.  All sampling parameter vectors are in stage order, from largest scale
-#' to the smallest, and must be fully nested.
+#' that indicate the sampling stages, sizes, strata, and weights.  All sampling
+#' parameter vectors are in stage order, from largest scale to the smallest, and
+#' must be fully nested.
 #' 
-#' Stages before and after Wunderground's lookup may consist of any spatial unit
-#' the user deems desirable.  Wunderscraper has built in support for sampling by
-#' states, counties, census blocks, and arbitrary spatial grids.  Using
-#' administrative boundaries to sample to the step of Wunderground's lookup is
-#' convenient due to their large size and, occasionally, coincidence with
-#' geographic features.  When sampling stations, after the Wunderground lookup,
-#' it's often more useful to use a spatial grid for sampling IDs or strata to
-#' ensure the sample acheives sufficient coverage.  Users may also opt for
-#' grid-sampling throughout all sample stages.  Wunderscraper uses tigris to
-#' fetch state and county geometries during the sampling stages.  The sampling
-#' frame must contain columns \code{STATE} and \code{COUNTY} to specify to
-#' tigris the appropriate geometries.
+#' Wunderscraper is limited to the following stage identifiers: states,
+#' counties, and arbitrary spatial grids.
 #'
 #' Sampling strategies may specify a variable for weighting the sample
 #' probabilities.  Wunderscraper provides state and county populations and land
@@ -55,14 +34,12 @@
 #' json to a file or convert each complete sample to a dataframe.
 #'
 #' @param scheduler A scheduler object.
-#' @param id A vector of strings specifying variable names for cluster ids.  The
-#'   unit ids of the last stage will also supply the `q' parameters for
-#'   Wunderground geolookups.
-#' @param size A vector of integers specifying sample size at each stage.
-#'   NA values specify complete sampling.  When missing the top stage is assumed
-#'   sampling with replacement and subsequent stages are complete sampling.  If
-#'   not specified for all stages then unspecified stages are assumed complete
-#'   sampling.
+#' @param id A vector of strings specifying variable names for cluster
+#'   identifiers.  The unit identifiers of the last stage will also supply the
+#'   `q' parameters for Wunderground geolookups.
+#' @param size A vector of integers specifying sample size at each stage. NA
+#'   values specify complete sampling.  If not specified for all stages then
+#'   unspecified stages are assumed complete sampling.
 #' @param strata A vector of strings specifying variable names for strata.  NA
 #'   values indicate simple sampling.
 #' @param weight A vector of strings specifying variable names for numeric
@@ -71,9 +48,9 @@
 #' @param cellsize A vector of numerics specifying cellsize for adding grids to
 #'   TIGER geometries.  TIGER geometries are in the unit of latitude-longitude
 #'   degrees.  value of NA specifies no grid.  The grids will be available to
-#'   the next stage.
-#' @param form A character string specifying output format.  Output to standard out
-#'   will always be written in JSON.
+#'   the next stage with the identifying variable GRID.
+#' @param form A character string specifying output format.  An NA value sends
+#'   output to standard out and will always be in JSON format.
 #' @param o A character string specifying output file.
 #' @return Wunderscrape may output the data directly to a file or to standard
 #'   out.  The output can be the JSON payload as recieved from Wunderground, or
@@ -91,7 +68,6 @@
 #' @export
 wunderscrape <- function(scheduler, id, size=NA, strata=NA, weight=NA, cellsize=NA, form='json', o=NA) {
     stations <- .getStations(scheduler, id, size, strata, weight, cellsize)
-    stop('success!')
     if(!is.na(o)) dir.create(o)
     for(station in sample(stations)) { # default sample reorders
         .schedule(scheduler)

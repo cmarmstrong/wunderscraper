@@ -15,9 +15,10 @@
 
 .scrapeOut <- function(form, o, station) {
     wuUrn <- .wuPath(.getApiKey(), 'conditions', paste('pws', station, sep=':'), 'json')
-    if(is.na(o)) writeLines(jsonlite::toJSON(.GETjson(Sys.getenv('WUNDERSCRAPER_URL'), wuUrn)))
+    content <- .GETjson(Sys.getenv('WUNDERSCRAPER_URL'), wuUrn)
+    if(is.na(o)) writeLines(jsonlite::toJSON(content))
     else if(form=='json') {
-        content <- jsonlite::toJSON(.GETjson(Sys.getenv('WUNDERSCRAPER_URL'), wuUrn))
+        content <- jsonlite::toJSON(content)
         fpath <- file.path(o, paste0(station, '-', as.integer(Sys.time()), '.json'))
         jsonlite::write_json(content, fpath)
     } else if(form=='data.frame') {
