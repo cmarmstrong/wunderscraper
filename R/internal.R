@@ -33,7 +33,7 @@
 .getGeolookup <- function(scheduler, queries) {
     ## returns sf with station id and POINT geometry columns
     geolookups <- lapply(unique(queries), function(query) {
-        wunderscraper::.schedule(scheduler)
+        .schedule(scheduler)
         geolookup <- .GETjson(Sys.getenv('WUNDERSCRAPER_URL'),
                               .wuPath(.getApiKey(), 'geolookup', query, 'json'))
         if(!is.null(geolookup $response $error)) return(NA)
@@ -80,7 +80,7 @@
 }
 
 .getStations <- function(scheduler, id, size, strata, weight, cellsize) {
-    sampleFrame <- wunderscraper::zctaRel
+    sampleFrame <- zctaRel
     geom <- .getTIGER() # default TIGER state geometries
     geom $GEOID <- NULL # state GEOID == STATEFP
     sampleFrame $GRID <- 1 # initialize GRID and geometry
