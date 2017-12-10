@@ -55,14 +55,16 @@
 
 .getGeometry <- function(geoid, cellsize, blocks=FALSE) {
     ## TIGER geometries with a factor for grid membership
-    geom <- do.call(.getTIGER, substr(geoid, 1, 2), substr(geoid, 3, 5))
-    ## geom <- .getTIGER(state, county)
-    if(!blocks) geom <- geom[geom $COUNTYFP%in%county, ]
+    states <- substr(geoid, 1, 2)
+    counties <- substr(geoid, 3, 5)
+    geom <- do.call(.getTIGER, list(states, counties))
+    if(!blocks) geom <- geom[geom $COUNTYFP%in%counties, ]
     if(!is.na(cellsize)) {
         if(cellsize<=0) geom $GRID <- 1
-        else {
-            geom <- sf::st_intersection(geom, sf::st_make_grid(geom, cellsize))
-            geom $GRID <- rownames(geom)
+        else { # TODO: generate random offset for make_grid
+            cells <- sf::st_make_grid(geom, cellsize)
+            cells <- sf::st_sf(data.frame(geometry=cells, GRID=1:length(cells)))
+            geom <- sf::st_intersection(cells, geom)
         }
     }
     geom $GEOID <- paste0(geom $STATEFP, geom $COUNTYFP) # safety
@@ -91,7 +93,6 @@
     else if(id[nstages]!='id') stop('id of last stage must equal "id" or nothing')
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
     list2env(sampleParams, environment()) # "attach" sampleParams to environment
-    browser()
     for(i in 1:nstages) { # index the arg vectors by i
         idFrame <- .getSampleFrame(sampleFrame, id[i], weight[i]) # drops geometry
         if(is.na(size[i])) idSample <- idFrame $id # complete sampling
@@ -107,7 +108,8 @@
         sampleFrame <- sampleFrame[sampleFrame[, id[i], drop=TRUE]%in%idSample, ] # has geometry
         if(!is.na(cellsize[i])) { # add grids of cellsize
             geom <- with(sampleFrame, .getGeometry(unique(GEOID), cellsize[i]))
-            sampleFrame <- sf::st_intersection(geom, sampleFrame)
+            sf::st_geometry(sampleFrame) <- NULL
+            sampleFrame <- merge(geom, sampleFrame, by='GEOID', suffixes=c('', paste0('.', i)))
         }
         if(i==nstages-1) { # wunderground geolookup
             geolookups <- .getGeolookup(scheduler, sampleFrame[, id[i], drop=TRUE])
