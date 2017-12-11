@@ -4,29 +4,32 @@
 #' zip codes, or a grid.
 #'
 #' Wunderscrape scrapes wunderground API with a possibly multistage sampling
-#' strategy for selecting weather stations.  The sampling strategy has one
-#' constraint: the last stage of the strategy must be: zip code, city name, or
-#' latitude/longitude.  This is because these are the units by which the
-#' wunderground API queries weather stations within a spatial area.
-#'
-#' In addition to sampling stages, users may specify weights, strata, and
-#' spatial grids to use as stages or strata.
+#' strategy.  The sampling strategy has one constraint: the last stage of the
+#' strategy must be: zip code, city name, or latitude/longitude.  Wunderscraper
+#' sends the values of the final stage identifier as queries to the wunderground
+#' API.  In addition to stages users may specify weights or strata, and may also
+#' generate spatial grids to use as stages or strata.
 #'
 #' Users specify a sampling strategy through a set of vector-valued arguments
 #' that indicate the sampling stages, sizes, strata, and weights.  All sampling
-#' parameter vectors are in stage order, from largest scale to the smallest, and
-#' must be fully nested.
+#' parameter vectors are in stage order, from the first to the last, and must be
+#' fully nested.
 #' 
-#' Wunderscraper is limited to the following stage identifiers: states,
-#' counties, and arbitrary spatial grids.
+#' Wunderscraper is limited to the following stage and strata identifiers:
+#' states, counties, and arbitrary spatial grids; indicated in sampling
+#' parameter vectors as \code{"STATE"}, \code{"COUNTY"}, and \code{"GRID"}
+#' respectively.
 #'
-#' Sampling strategies may specify a variable for weighting the sample
-#' probabilities.  Wunderscraper provides state and county populations and land
-#' areas.  See \code{\link{zctaRel}} for details on available weighting
-#' variables.
+#' Wunderscraper may use population or land area as a weighting variable.
+#' County population and state population are \code{"COPOP"} and \code{"STPOP"}
+#' respectively.  Similarly, county and state area are \code{"COAREA"} and
+#' \code{"STATEAREA"}, respectivley, where \code{"COLANDAREA"} and
+#' \code{"STATELANDAREA"} are land areas without water.  See
+#' \code{link{zctaRel}} for more details on available weighting variables.
 #'
 #' The sampling parameter vectors will be padded on the right with NA values to
-#' the length of the longest parameter vector.
+#' the length of the longest parameter vector.  NA for all sampling parameters
+#' results in a complete unweighted unstratified sample for that stage.
 #'
 #' wunderscrape uses the following template for building api queries:
 #' \code{http://api.wunderground.com/conditions/q/<query>.json}
