@@ -37,8 +37,9 @@
         geolookup <- .GETjson(Sys.getenv('WUNDERSCRAPER_URL'),
                               .wuPath(.getApiKey(), 'geolookup', query, 'json'))
         if(!is.null(geolookup $response $error)) return(NA)
+        ## convert latlon to sf geometry
         with(geolookup $location $nearby_weather_stations $pws $station,
-             sf::st_sf(geometry=sf::st_cast(sf::st_sfc(sf::st_multipoint( # reset st_sf indent!
+             sf::st_sf(geometry=sf::st_cast(sf::st_sfc(sf::st_multipoint( # reset indent!
                        matrix(c(lon, lat), ncol=2))), 'POINT'), id=id, stringsAsFactors=FALSE))
     })
     geolookups <- do.call(rbind, geolookups[!is.na(geolookups)])
@@ -49,9 +50,21 @@
 
 .getTIGER <- function(state=NULL, county=NULL, blocks=FALSE, cb=TRUE, resolution='20m') {
     ## state and county must be either NULL or vector valued.
-    if(is.null(state)) tigris::states(cb=cb, resolution=resolution, class='sf')
+    if(is.null(state)) {
+        geom <- tigris::states(cb=cb, resolution=resolution, class='sf')
+        geom $STAREA <- with(geom, ALAND+AWATER)
+        geom $STLAND <- geom $ALAND
+        geom $STWATER <- geom $AWATER
+        geom
+    }
     else if(blocks) tigris::blocks(state=state, county=county, class='sf')
-    else tigris::counties(state=state, cb=cb, resolution=resolution, class='sf')
+    else {
+        geom <- tigris::counties(state=state, cb=cb, resolution=resolution, class='sf')
+        geom $COAREA <- with(geom, ALAND+AWATER)
+        geom $COLAND <- geom $ALAND
+        geom $COWATER <- geom $AWATER
+        geom
+    }
 }
 
 .getGeometry <- function(geoid, cellsize, blocks=FALSE) {
@@ -80,12 +93,11 @@
 }
 
 .getStations <- function(scheduler, id, size, strata, weight, cellsize) {
-    sampleFrame <- zctaRel
+    sampleFrame <- zctaRel # see data.R
     geom <- .getTIGER() # default TIGER state geometries
     geom $GEOID <- NULL # state GEOID == STATEFP
     sampleFrame $GRID <- 1 # initialize GRID and geometry
-    sampleFrame <- merge(geom, sampleFrame, by.x='STATEFP', by.y='STATE') # merge.sf
-    names(sampleFrame)[names(sampleFrame)=='STATEFP'] <- 'STATE'
+    sampleFrame <- merge(geom, sampleFrame, by='STATEFP') # merge.sf
     sampleParams <- list(size=size, id=id, strata=strata, weight=weight, cellsize=cellsize)
     nstages <- max(lengths(sampleParams)) # number of sampling stages
     ## error checking

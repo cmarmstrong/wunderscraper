@@ -17,15 +17,15 @@
 #' 
 #' Wunderscraper is limited to the following stage and strata identifiers:
 #' states, counties, and arbitrary spatial grids; indicated in sampling
-#' parameter vectors as \code{"STATE"}, \code{"COUNTY"}, and \code{"GRID"}
+#' parameter vectors as \code{"STATEFP"}, \code{"GEOID"}, and \code{"GRID"}
 #' respectively.
 #'
 #' Wunderscraper may use population or land area as a weighting variable.
 #' County population and state population are \code{"COPOP"} and \code{"STPOP"}
 #' respectively.  Similarly, county and state area are \code{"COAREA"} and
-#' \code{"STATEAREA"}, respectivley, where \code{"COLANDAREA"} and
-#' \code{"STATELANDAREA"} are land areas without water.  See
-#' \code{link{zctaRel}} for more details on available weighting variables.
+#' \code{"STAREA"}, respectivley, where \code{"COLAND"} and \code{"STLAND"} are
+#' land areas without water.  See \code{link{zctaRel}} for more details on
+#' available weighting variables.
 #'
 #' The sampling parameter vectors will be padded on the right with NA values to
 #' the length of the longest parameter vector.  NA for all sampling parameters
@@ -66,7 +66,7 @@
 #' \dontrun{
 #' schedulerMMDD <- scheduler(counter())
 #' wunderscrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1), strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
-#' wunderscrape(schedulerMMDD, c("STATE", "GRID", "ZCTA5"), size=c(2, 1, 5, 1), strata=c(NA, NA, NA, "GRID"), cellsize=c(1, NA, 0.01))
+#' wunderscrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5"), size=c(2, 1, 5, 1), strata=c(NA, NA, NA, "GRID"), cellsize=c(1, NA, 0.01))
 #' }
 #' @export
 wunderscrape <- function(scheduler, id, size=NA, strata=NA, weight=NA, cellsize=NA, form='json', o=NA) {
