@@ -4,13 +4,14 @@
 \name{zctaRel}
 \alias{zctaRel}
 \title{Relationships for zip codes}
-\format{A data frame with 44410 rows and 5 variables:
+\format{A data frame with 44410 rows and 8 variables:
 \describe{
   \item{ZCTA5}{zip code}
   \item{COUNTYFP}{3 character string indicating county Federal Information
     Processing Standard (FIPS) code}
   \item{STATEFP}{2 character string indicating state FIPS code}
   \item{GEOID}{5 character string concatonating STATEFP and COUNTYFP}
+  \item{STPOP}{state population}
   \item{COPOP}{county population}
   \item{ZPOP}{zip code population}
   \item{POPPT}{partial zip code population, one value for each county

@@ -3,7 +3,7 @@
 #' A dataset containing population and land area of zip codes and administrative
 #' boundaries
 #'
-#' @format A data frame with 44410 rows and 5 variables:
+#' @format A data frame with 44410 rows and 8 variables:
 #' \describe{
 #'   \item{ZCTA5}{zip code}
 #'   \item{COUNTYFP}{3 character string indicating county Federal Information
