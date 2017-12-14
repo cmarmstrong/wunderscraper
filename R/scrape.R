@@ -3,12 +3,12 @@
 #' Scrape wunderground API with a sampling strategy based on states, counties,
 #' zip codes, or a grid.
 #'
-#' Wunderscrape scrapes wunderground API with a possibly multistage sampling
-#' strategy.  The sampling strategy has one constraint: the last stage of the
-#' strategy must be: zip code, city name, or latitude/longitude.  Wunderscraper
-#' sends the values of the final stage identifier as queries to the wunderground
-#' API.  In addition to stages users may specify weights or strata, and may also
-#' generate spatial grids to use as stages or strata.
+#' Scrapes wunderground API with a possibly multistage sampling strategy.  The
+#' sampling strategy has one constraint: the last stage of the strategy must be:
+#' zip code, city name, or latitude/longitude.  Wunderscraper sends the values
+#' of the final stage identifier as queries to the wunderground API.  In addition
+#' to stages users may specify weights or strata, and may also generate spatial
+#' grids to use as stages or strata.
 #'
 #' Users specify a sampling strategy through a set of vector-valued arguments
 #' that indicate the sampling stages, sizes, strata, and weights.  All sampling
@@ -24,17 +24,18 @@
 #' County population and state population are \code{"COPOP"} and \code{"STPOP"}
 #' respectively.  Similarly, county and state area are \code{"COAREA"} and
 #' \code{"STAREA"}, respectivley, where \code{"COLAND"} and \code{"STLAND"} are
-#' land areas without water.  See \code{link{zctaRel}} for more details on
+#' land areas without water.  See \code{\link{zctaRel}} for more details on
 #' available weighting variables.
 #'
 #' The sampling parameter vectors will be padded on the right with NA values to
 #' the length of the longest parameter vector.  NA for all sampling parameters
 #' results in a complete unweighted unstratified sample for that stage.
 #'
-#' wunderscrape uses the following template for building api queries:
+#' Wunderscraper uses the following template for building api queries:
 #' \code{http://api.wunderground.com/conditions/q/<query>.json}
 #' wunderscrape returns the value of each query, and can either write the raw
-#' json to a file or convert each complete sample to a dataframe.
+#' json to a file or collect the sample and save all stations as a dataframe in
+#' rds format.
 #'
 #' @param scheduler A scheduler object.
 #' @param id A vector of strings specifying variable names for cluster
@@ -54,7 +55,9 @@
 #'   the next stage with the identifying variable GRID.
 #' @param form A character string specifying output format.  An NA value sends
 #'   output to standard out and will always be in JSON format.
-#' @param o A character string specifying output file.
+#' @param o A character string specifying output directory or file.  If
+#'   \code{form='json'} then this will be a directory with each station, else it
+#'   will be the name of an rds file containing the sample in a dataframe.
 #' @return Wunderscrape may output the data directly to a file or to standard
 #'   out.  The output can be the JSON payload as recieved from Wunderground, or
 #'   converted to a dataframe, with each complete sample comprising one
@@ -65,18 +68,18 @@
 #' @examples
 #' \dontrun{
 #' schedulerMMDD <- scheduler(counter())
-#' wunderscrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
+#' scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
 #'              strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
-#' wunderscrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5"), size=c(2, 1, 5, 1),
+#' scrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5"), size=c(2, 1, 5, 1),
 #'              strata=c(NA, NA, NA, "GRID"), cellsize=c(1, NA, 0.01))
 #' }
 #' @export
-wunderscrape <- function(scheduler, id, size=NA, strata=NA, weight=NA, cellsize=NA, form='json', o=NA) {
-    stations <- .getStations(scheduler, id, size, strata, weight, cellsize)
+scrape <- function(scheduler, id, size=NA, strata=NA, weight=NA, cellsize=NA, form='json', o=NA) {
+    stations <- .wuSample(scheduler, id, size, strata, weight, cellsize)
     if(!is.na(o)) dir.create(o)
     for(station in sample(stations)) { # default sample reorders
         .schedule(scheduler)
-        .scrapeOut(form, o, station)
+        .writeContent(.wuContent(station), form, o)
     }
     ## sync(scheduler)
 }

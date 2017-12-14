@@ -13,42 +13,7 @@
     jsonlite::fromJSON(rawToChar(response $content))
 }
 
-.scrapeOut <- function(form, o, station) {
-    wuUrn <- .wuPath(.getApiKey(), 'conditions', paste('pws', station, sep=':'), 'json')
-    content <- .GETjson(Sys.getenv('WUNDERSCRAPER_URL'), wuUrn)
-    if(is.na(o)) writeLines(jsonlite::toJSON(content))
-    else if(form=='json') {
-        content <- jsonlite::toJSON(content)
-        fpath <- file.path(o, paste0(station, '-', as.integer(Sys.time()), '.json'))
-        jsonlite::write_json(content, fpath)
-    } else if(form=='data.frame') {
-        stop('not implemented')
-    }   
-}
-
-.wuPath <- function(key, feature, id, format) {
-    paste(paste('api', key, feature, 'q', id, sep='/'), format, sep='.')
-}
-
-.getGeolookup <- function(scheduler, queries) {
-    ## returns sf with station id and POINT geometry columns
-    geolookups <- lapply(unique(queries), function(query) {
-        .schedule(scheduler)
-        geolookup <- .GETjson(Sys.getenv('WUNDERSCRAPER_URL'),
-                              .wuPath(.getApiKey(), 'geolookup', query, 'json'))
-        if(!is.null(geolookup $response $error)) return(NA)
-        ## convert latlon to sf geometry
-        with(geolookup $location $nearby_weather_stations $pws $station,
-             sf::st_sf(geometry=sf::st_cast(sf::st_sfc(sf::st_multipoint( # reset indent!
-                       matrix(c(lon, lat), ncol=2))), 'POINT'), id=id, stringsAsFactors=FALSE))
-    })
-    geolookups <- do.call(rbind, geolookups[!is.na(geolookups)])
-    geolookups <- geolookups[!duplicated(geolookups $id), ] # remove duplicate stations
-    sf::st_crs(geolookups) <- 4326 # WU in 4326
-    geolookups
-}
-
-.getTIGER <- function(state=NULL, county=NULL, blocks=FALSE, cb=TRUE, resolution='20m') {
+.ringmaster <- function(state=NULL, county=NULL, blocks=FALSE, cb=TRUE, resolution='20m') {
     ## state and county must be either NULL or vector valued.
     if(is.null(state)) {
         geom <- tigris::states(cb=cb, resolution=resolution, class='sf')
@@ -67,11 +32,38 @@
     }
 }
 
+.wuPath <- function(key, feature, id, format) {
+    paste(paste('api', key, feature, 'q', id, sep='/'), format, sep='.')
+}
+
+.wuContent <- function(station) {
+    wuUrn <- .wuPath(.getApiKey(), 'conditions', paste('pws', station, sep=':'), 'json')
+    .GETjson(Sys.getenv('WUNDERSCRAPER_URL'), wuUrn)
+}
+
+.wuGeolookup <- function(scheduler, queries) {
+    ## returns sf with station id and POINT geometry columns
+    geolookups <- lapply(unique(queries), function(query) {
+        .schedule(scheduler)
+        geolookup <- .GETjson(Sys.getenv('WUNDERSCRAPER_URL'),
+                              .wuPath(.getApiKey(), 'geolookup', query, 'json'))
+        if(!is.null(geolookup $response $error)) return(NA)
+        ## convert latlon to sf geometry
+        with(geolookup $location $nearby_weather_stations $pws $station,
+             sf::st_sf(geometry=sf::st_cast(sf::st_sfc(sf::st_multipoint( # reset indent!
+                       matrix(c(lon, lat), ncol=2))), 'POINT'), id=id, stringsAsFactors=FALSE))
+    })
+    geolookups <- do.call(rbind, geolookups[!is.na(geolookups)])
+    geolookups <- geolookups[!duplicated(geolookups $id), ] # remove duplicate stations
+    sf::st_crs(geolookups) <- 4326 # WU in 4326
+    geolookups
+}
+
 .getGeometry <- function(geoid, cellsize, blocks=FALSE) {
     ## TIGER geometries with a factor for grid membership
     states <- substr(geoid, 1, 2)
     counties <- substr(geoid, 3, 5)
-    geom <- do.call(.getTIGER, list(states, counties))
+    geom <- do.call(.ringmaster, list(states, counties))
     if(!blocks) geom <- geom[geom $COUNTYFP%in%counties, ]
     if(!is.na(cellsize)) {
         if(cellsize<=0) geom $GRID <- 1
@@ -85,19 +77,21 @@
     geom
 }
 
-.getSampleFrame <- function(sampleFrame, id, weight) {
-    sampleFrame[, 'id'] <- sampleFrame[, id, drop=TRUE]
-    sampleFrame[, 'weight'] <- ifelse(is.na(weight), 1, sampleFrame[, weight])
-    sf::st_geometry(sampleFrame) <- NULL # sampleFrame is sf
-    sampleFrame[!duplicated(sampleFrame[, id]), c('id', 'weight')]
+.getSampleFrame <- function(dfr, id, weight) {
+    dfr[, 'id'] <- dfr[, id, drop=TRUE]
+    dfr[, 'weight'] <- ifelse(is.na(weight), 1, dfr[, weight])
+    sf::st_geometry(dfr) <- NULL # dfr is sf
+    dfr[!duplicated(dfr[, id]), c('id', 'weight')]
 }
 
-.getStations <- function(scheduler, id, size, strata, weight, cellsize) {
-    sampleFrame <- zctaRel # see data.R
-    geom <- .getTIGER() # default TIGER state geometries
+.wuSample <- function(scheduler, id, size, strata, weight, cellsize) {
+    ## enact a sampling strategy upon wunderground API
+    data(zctaRel) # see data.R
+    dfr <- zctaRel
+    geom <- .ringmaster() # defaults to state geometries
     geom $GEOID <- NULL # state GEOID == STATEFP
-    sampleFrame $GRID <- 1 # initialize GRID and geometry
-    sampleFrame <- merge(geom, sampleFrame, by='STATEFP') # merge.sf
+    dfr $GRID <- 1 # initialize GRID and geometry
+    dfr <- merge(geom, dfr, by='STATEFP') # merge.sf
     sampleParams <- list(size=size, id=id, strata=strata, weight=weight, cellsize=cellsize)
     nstages <- max(lengths(sampleParams)) # number of sampling stages
     ## error checking
@@ -107,28 +101,39 @@
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
     list2env(sampleParams, environment()) # "attach" sampleParams to environment
     for(i in 1:nstages) { # index the arg vectors by i
-        idFrame <- .getSampleFrame(sampleFrame, id[i], weight[i]) # drops geometry
-        if(is.na(size[i])) idSample <- idFrame $id # complete sampling
+        sampleFrame <- .getSampleFrame(dfr, id[i], weight[i]) # drops geometry
+        if(is.na(size[i])) selection <- sampleFrame $id # complete sampling
         else if(is.na(strata[i])) { # simple sampling
-            idSample <- with(idFrame, sample(id, size[i], prob=weight))
+            selection <- with(sampleFrame, sample(id, size[i], prob=weight))
         } else { # stratified sampling
             getStrataFrame <- function(strataFrame) { # .getSampleFrame for each strata
                 with(.getSampleFrame(strataFrame, id[i], weight[i]),
                      sample(id, size[i], prob=weight)) # stratified sampling must have size
             }
-            idSample <- by(sampleFrame, sampleFrame[, strata[i], drop=TRUE], getStrataFrame)
+            selection <- by(dfr, dfr[, strata[i], drop=TRUE], getStrataFrame)
         }
-        sampleFrame <- sampleFrame[sampleFrame[, id[i], drop=TRUE]%in%idSample, ] # has geometry
-        if(!is.na(cellsize[i])) { # add grids of cellsize
-            geom <- with(sampleFrame, .getGeometry(unique(GEOID), cellsize[i]))
-            sf::st_geometry(sampleFrame) <- NULL
-            sampleFrame <- merge(geom, sampleFrame, by='GEOID', suffixes=c('', paste0('.', i)))
+        dfr <- dfr[dfr[, id[i], drop=TRUE] %in% selection, ] # has geometry
+        if(!is.na(cellsize[i])) { # get new geometries and add grids of cellsize
+            geom <- with(dfr, .getGeometry(unique(GEOID), cellsize[i]))
+            sf::st_geometry(dfr) <- NULL
+            dfr <- merge(geom, dfr, by='GEOID', suffixes=c('', paste0('.', i)))
         }
         if(i==nstages-1) { # wunderground geolookup
-            geolookups <- .getGeolookup(scheduler, sampleFrame[, id[i], drop=TRUE])
-            geolookups <- sf::st_transform(geolookups, sf::st_crs(sampleFrame))
-            sampleFrame <- sf::st_intersection(geolookups, sampleFrame)
+            geolookups <- .wuGeolookup(scheduler, dfr[, id[i], drop=TRUE])
+            geolookups <- sf::st_transform(geolookups, sf::st_crs(dfr))
+            dfr <- sf::st_intersection(geolookups, dfr)
         }
     }
-    unique(sampleFrame $id)
+    unique(dfr $id)
+}
+
+.writeContent <- function(content, form, o) {
+    if(is.na(o)) writeLines(jsonlite::toJSON(content))
+    else if(form=='json') {
+        content <- jsonlite::toJSON(content)
+        fpath <- file.path(o, paste0(station, '-', as.integer(Sys.time()), '.json'))
+        jsonlite::write_json(content, fpath)
+    } else if(form=='data.frame') {
+        stop('not implemented')
+    }   
 }
