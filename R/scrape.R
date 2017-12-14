@@ -79,7 +79,7 @@ scrape <- function(scheduler, id, size=NA, strata=NA, weight=NA, cellsize=NA, fo
     if(!is.na(o)) dir.create(o)
     for(station in sample(stations)) { # default sample reorders
         .schedule(scheduler)
-        .writeContent(.wuContent(station), form, o)
+        .writeResponse(.wuConditions(station), form, o)
     }
     ## sync(scheduler)
 }

@@ -5,7 +5,7 @@
 #' usage limits.
 #'
 #' @section Wunderscraper functions:
-#' \code{\link{wunderscrape}}
+#' \code{\link{scrape}}
 #'
 #' @section Wunderscraper objects:
 #' \code{\link{scheduler}}
