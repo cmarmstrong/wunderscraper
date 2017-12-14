@@ -19,7 +19,8 @@ values specify complete sampling.  If not specified for all stages then
 unspecified stages are assumed complete sampling.}
 
 \item{strata}{A vector of strings specifying variable names for strata.  NA
-values indicate simple sampling.}
+values indicate simple sampling.  Wunderscraper will repeat sampling in
+each strata.}
 
 \item{weight}{A vector of strings specifying variable names for numeric
 variables that indiciate sampling weights.  NA values specify unweighted
@@ -87,10 +88,13 @@ rds format.
 \examples{
 \dontrun{
 schedulerMMDD <- scheduler(counter())
+## select random county and sample from 1km^3 strata
 scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
        strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
+## select two states and in each state select a 100km^3 area and sample five zip codes
+## stratified into 1km^3 areas.
 scrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5"), size=c(2, 1, 5, 1),
-       strata=c(NA, NA, NA, "GRID"), cellsize=c(1, NA, 0.01))
+       strata=c(NA, "STATEFP", "GRID", "GRID"), cellsize=c(1, NA, 0.01))
 }
 }
 \seealso{
