@@ -69,9 +69,9 @@
 #' \dontrun{
 #' schedulerMMDD <- scheduler(counter())
 #' scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
-#'              strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
+#'        strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
 #' scrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5"), size=c(2, 1, 5, 1),
-#'              strata=c(NA, NA, NA, "GRID"), cellsize=c(1, NA, 0.01))
+#'        strata=c(NA, NA, NA, "GRID"), cellsize=c(1, NA, 0.01))
 #' }
 #' @export
 scrape <- function(scheduler, id, size=NA, strata=NA, weight=NA, cellsize=NA, form='json', o=NA) {
