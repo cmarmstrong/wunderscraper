@@ -110,7 +110,7 @@
                 with(.getSampleFrame(strataFrame, id[i], weight[i]),
                      sample(id, size[i], prob=weight)) # stratified sampling must have size
             }
-            selection <- by(dfr, dfr[, strata[i], drop=TRUE], getStrataFrame)
+            selection <- unlist(by(dfr, dfr[, strata[i], drop=TRUE], getStrataFrame))
         }
         dfr <- dfr[dfr[, id[i], drop=TRUE] %in% selection, ] # has geometry
         if(!is.na(cellsize[i])) { # get new geometries and add grids of cellsize
