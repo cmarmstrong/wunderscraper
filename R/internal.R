@@ -49,7 +49,9 @@
                               .wuPath(.getApiKey(), 'geolookup', query, 'json'))
         if(!is.null(geolookup $response $error)) return(NA)
         ## convert latlon to sf geometry
-        with(geolookup $location $nearby_weather_stations $pws $station,
+        stations <- geolookup $location $nearby_weather_stations $pws $station
+        if(is.null(stations)) return(NULL) # else
+        with(stations,
              sf::st_sf(geometry=sf::st_cast(sf::st_sfc(sf::st_multipoint( # reset indent!
                        matrix(c(lon, lat), ncol=2))), 'POINT'), id=id, stringsAsFactors=FALSE))
     })
@@ -63,12 +65,15 @@
     ## TIGER geometries with a factor for grid membership
     states <- substr(geoid, 1, 2)
     counties <- substr(geoid, 3, 5)
-    geom <- do.call(.ringmaster, list(states, counties))
+    ## geom <- do.call(.ringmaster, list(states, counties))
+    geom <- .ringmaster(states, counties)
     if(!blocks) geom <- geom[geom $COUNTYFP%in%counties, ]
     if(!is.na(cellsize)) {
         if(cellsize<=0) geom $GRID <- 1
         else { # TODO: generate random offset for make_grid
-            cells <- sf::st_make_grid(geom, cellsize)
+            ## cells <- sf::st_make_grid(geom, cellsize)
+            cells <- by(geom, geom $COUNTYFP, sf::st_make_grid, cellsize)
+            cells <- do.call(c, cells)
             cells <- sf::st_sf(data.frame(geometry=cells, GRID=1:length(cells)))
             geom <- sf::st_intersection(cells, geom)
         }
