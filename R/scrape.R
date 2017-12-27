@@ -81,10 +81,6 @@
 scrape <- function(scheduler, id, size=NA, strata=NA, weight=NA, cellsize=NA, form='json', o=NA) {
     stations <- .wuSample(scheduler, id, size, strata, weight, cellsize)
     if(!is.na(o)) dir.create(o)
-    for(station in sample(stations)) { # default sample reorders
-        .schedule(scheduler)
-        print(paste0("loop-", station))
-        .writeResponse(.wuConditions(station), form, o)
-    }
+    for(station in sample(stations)) .writeResponse(.wuConditions(scheduler, station), form, o)
     ## sync(scheduler)
 }

@@ -36,7 +36,8 @@
     paste(paste('api', key, feature, 'q', id, sep='/'), format, sep='.')
 }
 
-.wuConditions <- function(station) {
+.wuConditions <- function(scheduler, station) {
+    .schedule(scheduler)
     wuUrn <- .wuPath(.getApiKey(), 'conditions', paste('pws', station, sep=':'), 'json')
     .GETjson(Sys.getenv('WUNDERSCRAPER_URL'), wuUrn)
 }
@@ -135,9 +136,9 @@
 .writeResponse <- function(response, form, o) {
     if(is.na(o)) writeLines(jsonlite::toJSON(response))
     else if(form=='json') {
-        response <- jsonlite::toJSON(response)
         fpath <- file.path(o, paste0(response $current_observation $station_id,
                                      '-', as.integer(Sys.time()), '.json'))
+        response <- jsonlite::toJSON(response)
         jsonlite::write_json(response, fpath)
     } else if(form=='data.frame') {
         stop('not implemented')
