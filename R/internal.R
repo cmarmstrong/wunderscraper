@@ -25,6 +25,7 @@
     else if(blocks) tigris::blocks(state=state, county=county, class='sf')
     else {
         geom <- tigris::counties(state=state, cb=cb, resolution=resolution, class='sf')
+        geom <- geom[geom $COUNTYFP %in% county, ]
         geom $COAREA <- with(geom, ALAND+AWATER)
         geom $COLAND <- geom $ALAND
         geom $COWATER <- geom $AWATER
