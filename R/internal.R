@@ -24,8 +24,9 @@
     }
     else if(blocks) tigris::blocks(state=state, county=county, class='sf')
     else {
+        geoid <- paste(state, county, sep="")
         geom <- tigris::counties(state=state, cb=cb, resolution=resolution, class='sf')
-        geom <- geom[geom $COUNTYFP %in% county, ]
+        geom <- geom[geom $GEOID %in% geoid, ]
         geom $COAREA <- with(geom, ALAND+AWATER)
         geom $COLAND <- geom $ALAND
         geom $COWATER <- geom $AWATER
@@ -69,12 +70,12 @@
     counties <- substr(geoid, 3, 5)
     ## geom <- do.call(.ringmaster, list(states, counties))
     geom <- .ringmaster(states, counties)
-    if(!blocks) geom <- geom[geom $COUNTYFP%in%counties, ]
+    if(!blocks) geom <- geom[geom $GEOID %in% geoid, ]
     if(!is.na(cellsize)) {
         if(cellsize<=0) geom $GRID <- 1
         else { # TODO: generate random offset for make_grid
             ## cells <- sf::st_make_grid(geom, cellsize)
-            cells <- by(geom, geom $COUNTYFP, sf::st_make_grid, cellsize)
+            cells <- by(geom, geom $GEOID, sf::st_make_grid, cellsize)
             cells <- do.call(c, cells)
             cells <- sf::st_sf(data.frame(geometry=cells, GRID=1:length(cells)))
             geom <- sf::st_intersection(cells, geom)
