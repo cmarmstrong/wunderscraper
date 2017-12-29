@@ -77,6 +77,7 @@
 #' scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
 #'        strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
 #' ## same, but limit sampling to southeastern US
+#' data(zctaRel)
 #' SE <- c("01", "05", "12", "13", "21", "22", "24", "28", "37", "45", "47", "51", "54")
 #' scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
 #'        strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01),
