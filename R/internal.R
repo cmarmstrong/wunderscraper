@@ -143,5 +143,5 @@
         jsonlite::write_json(response, fpath)
     } else if(form=='data.frame') {
         stop('not implemented')
-    }
+    } else stop('not implemented')
 }

@@ -4,10 +4,12 @@
 \alias{setApiKey}
 \title{Set API key.}
 \usage{
-setApiKey(key)
+setApiKey(key, f)
 }
 \arguments{
-\item{key}{Valid Wunderground API key}
+\item{key}{A valid Wunderground API key}
+
+\item{f}{A string indicating a text file containing only an API key}
 }
 \value{
 TRUE if setApiKey succeded
@@ -16,7 +18,8 @@ TRUE if setApiKey succeded
 Sets the API key to the value of the argument.
 }
 \details{
-Does not check if key is valid.
+If \code{f} is not missing, then reads the API key from a file, else sets
+key to the \code{key} parameter.  Does not check if key is valid.
 }
 \examples{
 setApiKey('1a2b3c4d5e6f7g8h9i0j')

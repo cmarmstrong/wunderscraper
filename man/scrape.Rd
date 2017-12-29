@@ -13,7 +13,12 @@ scrape(scheduler, id, size = NA, strata = NA, weight = NA,
 
 \item{id}{A vector of strings specifying variable names for cluster
 identifiers.  The unit identifiers of the last stage will also supply the
-`q' parameters for Wunderground geolookups.}
+`q' parameters for Wunderground geolookups.  The `q' parameter must be a
+zip code, city name, or latitude/longitude.  Zip codes must have 5 digits.
+City names must be strings with underscores for spaces.  Latitude/longitude
+must be a string of two floating point numbers separated by a comma.  Data
+that does not meet these requirements may find no results from the
+Wunderground API, or may cause an error.}
 
 \item{size}{A vector of integers specifying sample size at each stage. NA
 values specify complete sampling.  If not specified for all stages then
@@ -38,7 +43,8 @@ columns for any data required by the sampling strategy.  Defaults to
 \code{\link{zctaRel}}.}
 
 \item{form}{A character string specifying output format.  An NA value sends
-output to standard out and will always be in JSON format.}
+output to standard out and will always be in JSON format.  Possible formats
+are: "json"; any other value will result in an error.}
 
 \item{o}{A character string specifying output directory or file.  If
 \code{form='json'} then this will be a directory with each station, else it
@@ -93,8 +99,9 @@ rds format.
 }
 \examples{
 \dontrun{
+setApiKey(f='wuApiKey.txt')
 schedulerMMDD <- scheduler(counter())
-## select random county and sample from 1km^3 strata
+## select random county and sample from 1km^2 strata
 scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
        strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
 ## same, but limit sampling to southeastern US
@@ -103,10 +110,17 @@ SE <- c("01", "05", "12", "13", "21", "22", "24", "28", "37", "45", "47", "51", 
 scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
        strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01),
        sampleFrame=zctaRel[zctaRel $STATEFP \%in\% SE, ])
-## select two states and in each state select a 100km^3 area and sample five zip codes
-## stratified into 1km^3 areas.
+## select two states and in each state select a 100km^2 area and sample five zip codes
+## stratified into 1km^2 areas.
 scrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5"), size=c(2, 1, 5, 1),
        strata=c(NA, "STATEFP", "GRID", "GRID"), cellsize=c(1, NA, 0.01))
+## periodically resample one location
+sampleFrame <- with(zctaRel, zctaRel[GEOID==sample(GEOID, 1, weight=COPOP), ])
+plan(schedulerMMDD, '2 hours')
+repeat {
+  scrape(schedulerMMDD, "ZCTA5", strata=c(NA, "GRID"), cellsize=0.01, sampleFrame=sampleFrame)
+  sync(schedulerMMDD) # sync schedule after each sample to wait for next scheduled sample
+}
 }
 }
 \seealso{
