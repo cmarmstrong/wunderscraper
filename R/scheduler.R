@@ -8,16 +8,23 @@
 #'
 #' Scheduler has methods for managing the schedule: \code{\link{plan}}, and
 #' \code{\link{sync}}.
-#' @param counter A \code{\link{counter}} object
+#' @param plan API usage plan.  Possible values are developer (500 calls a day 10
+#' calls a minute, drizzle (5000 calls a day 100 calls a minute) shower (100000
+#' calls a day 1000 a minute), or custom (see parameters day and minute).
+#' @param day Custom daily API usage limit.
+#' @param minute Custom minute API usage limit.
 #' @return Returns a scheduler object.
 #' @seealso \code{\link{plan.scheduler}}, \code{\link{sync.scheduler}}
 #' @examples
-#' scheduler(counter(plan='drizzle'))
+#' scheduler(plan='drizzle')
 #' @export
-scheduler <- function(counter) {
+scheduler <- function(plan='developer', day=NA, minute=NA) {
     e <- structure(new.env(), class='scheduler') # use environment for reference semantics
     e $date=format(Sys.Date(), tz='America/New_York')
-    e $counter <- counter
+    e $n <- 0
+    e $plan <- plan
+    e $limits <- list(developer=c(500, 10), drizzle=c(5000, 100), shower=c(1e5, 1e3),
+                      custom=c(day, minute))
     e $schedule <- seq(strptime(0, '%H'), strptime(23, '%H'), '1 hour') # default schedule
     e
 }
