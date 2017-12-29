@@ -28,6 +28,7 @@ A dataset containing population and land area of zip codes and administrative
 boundaries
 }
 \examples{
+data(zctaRel)
 summary(zctaRel)
 }
 \keyword{datasets}

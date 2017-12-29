@@ -92,10 +92,9 @@
     dfr[!duplicated(dfr[, id]), c('id', 'weight')]
 }
 
-.wuSample <- function(scheduler, id, size, strata, weight, cellsize) {
+.wuSample <- function(scheduler, id, size, strata, weight, cellsize, sampleFrame) {
     ## enact a sampling strategy upon wunderground API
-    utils::data('zctaRel') # see data.R
-    dfr <- zctaRel
+    dfr <- sampleFrame
     geom <- .ringmaster() # defaults to state geometries
     geom $GEOID <- NULL # state GEOID == STATEFP
     dfr $GRID <- 1 # initialize GRID and geometry

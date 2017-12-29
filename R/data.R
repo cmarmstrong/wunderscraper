@@ -18,5 +18,6 @@
 #' }
 #' @source \url{https://www2.census.gov/geo/docs/maps-data/data/rel/zcta_county_rel_10.txt}
 #' @examples
+#' data(zctaRel)
 #' summary(zctaRel)
 "zctaRel"

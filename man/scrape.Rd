@@ -5,7 +5,8 @@
 \title{Scrape wunderground API}
 \usage{
 scrape(scheduler, id, size = NA, strata = NA, weight = NA,
-  cellsize = NA, form = "json", o = NA)
+  cellsize = NA, sampleFrame = wunderscraper::zctaRel, form = "json",
+  o = NA)
 }
 \arguments{
 \item{scheduler}{A scheduler object.}
@@ -30,6 +31,11 @@ sampling.}
 TIGER geometries.  TIGER geometries are in the unit of latitude-longitude
 degrees.  value of NA specifies no grid.  The grids will be available to
 the next stage with the identifying variable GRID.}
+
+\item{sampleFrame}{A dataframe representing the sampling frame.  The
+dataframe must contain columns named "STATEFP" and "GEOID", along with
+columns for any data required by the sampling strategy.  Defaults to
+\code{\link{zctaRel}}.}
 
 \item{form}{A character string specifying output format.  An NA value sends
 output to standard out and will always be in JSON format.}
@@ -91,6 +97,11 @@ schedulerMMDD <- scheduler(counter())
 ## select random county and sample from 1km^3 strata
 scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
        strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
+## same, but limit sampling to southeastern US
+SE <- c("01", "05", "12", "13", "21", "22", "24", "28", "37", "45", "47", "51", "54")
+scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
+       strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01),
+       sampleFrame=zctaRel[zctaRel $STATEFP \%in\% SE, ])
 ## select two states and in each state select a 100km^3 area and sample five zip codes
 ## stratified into 1km^3 areas.
 scrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5"), size=c(2, 1, 5, 1),
