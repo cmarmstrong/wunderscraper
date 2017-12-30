@@ -35,7 +35,7 @@ scheduler <- function(plan='developer', day=NA, minute=NA) {
 
 .schedule.scheduler <- function(scheduler) {
     ## schedule and ensure api calls remain within minute and daily limits
-    limits <- with(scheduler $counter, limits[[plan]])
+    limits <- with(scheduler, limits[[plan]])
     repeat{
         if(scheduler $schedule[1]<Sys.time()) break # wait till start time
         Sys.sleep(Sys.getenv('WUNDERSCRAPER_SLEEP'))
@@ -43,13 +43,13 @@ scheduler <- function(plan='developer', day=NA, minute=NA) {
     repeat{
         d <- format(Sys.Date(), tz='America/New_York')
         if(scheduler $date<d) {
-            scheduler $counter $n <- 0
+            scheduler $n <- 0
             scheduler $date <- d
             sync(scheduler)
         }
-        if(scheduler $counter $n<limits[1]) break # daily limits
+        if(scheduler $n<limits[1]) break # daily limits
         Sys.sleep(Sys.getenv('WUNDERSCRAPER_SLEEP'))
     }
     Sys.sleep(61/limits[2]) # minute limits
-    .increment(scheduler $counter)
+    scheduler $n <- scheduler $n + 1
 }
