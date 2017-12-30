@@ -79,7 +79,7 @@
 #' @examples
 #' \dontrun{
 #' setApiKey(f='wuApiKey.txt')
-#' schedulerMMDD <- scheduler(counter())
+#' schedulerMMDD <- scheduler()
 #' ## select random county and sample from 1km^2 strata
 #' scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
 #'        strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))

@@ -8,9 +8,10 @@
 #'
 #' Scheduler has methods for managing the schedule: \code{\link{plan}}, and
 #' \code{\link{sync}}.
-#' @param plan API usage plan.  Possible values are developer (500 calls a day 10
-#' calls a minute, drizzle (5000 calls a day 100 calls a minute) shower (100000
-#' calls a day 1000 a minute), or custom (see parameters day and minute).
+#' @param plan API usage plan.  Possible values are "developer" (500 calls a day
+#' 10 calls a minute, "drizzle" (5000 calls a day 100 calls a minute) "shower"
+#' (100000 calls a day 1000 a minute), or "custom" (see parameters \code{day}
+#' and \code{minute}).
 #' @param day Custom daily API usage limit.
 #' @param minute Custom minute API usage limit.
 #' @return Returns a scheduler object.
