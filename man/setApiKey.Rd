@@ -4,7 +4,7 @@
 \alias{setApiKey}
 \title{Set API key.}
 \usage{
-setApiKey(key, f)
+setApiKey(key, f = NULL)
 }
 \arguments{
 \item{key}{A valid Wunderground API key}

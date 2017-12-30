@@ -4,17 +4,23 @@
 \alias{scheduler}
 \title{Schedules wunderscraper}
 \usage{
-scheduler(counter)
+scheduler(plan = "developer", day = NA, minute = NA)
 }
 \arguments{
-\item{counter}{A \code{\link{counter}} object}
+\item{plan}{API usage plan.  Possible values are "developer" (500 calls a day
+10 calls a minute, "drizzle" (5000 calls a day 100 calls a minute) "shower"
+(100000 calls a day 1000 a minute), or "custom" (see parameters \code{day}
+and \code{minute}).}
+
+\item{day}{Custom daily API usage limit.}
+
+\item{minute}{Custom minute API usage limit.}
 }
 \value{
 Returns a scheduler object.
 }
 \description{
-Uses a schedule and counter to schedule sampling and ensure wunderscraper
-remains within API usage limits.
+Schedule sampling and ensure wunderscraper remains within API usage limits.
 }
 \details{
 Scheduler is a constructor function that returns a scheduler object for use
@@ -24,7 +30,7 @@ Scheduler has methods for managing the schedule: \code{\link{plan}}, and
 \code{\link{sync}}.
 }
 \examples{
-scheduler(counter(plan='drizzle'))
+scheduler(plan='drizzle')
 }
 \seealso{
 \code{\link{plan.scheduler}}, \code{\link{sync.scheduler}}

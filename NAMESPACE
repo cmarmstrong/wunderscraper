@@ -2,7 +2,6 @@
 
 S3method(plan,scheduler)
 S3method(sync,scheduler)
-export(counter)
 export(plan)
 export(scheduler)
 export(scrape)

@@ -7,9 +7,8 @@
 #' @return Returns TRUE when successful.
 #' @seealso \code{\link{strptime}}, \code{\link{seq.POSIXt}}
 #' @examples
-#' mycounter <- counter(plan='drizzle')
-#' plan(scheduler(mycounter), '1 hour') # sample every hour
-#' plan(scheduler(mycounter), '30 min') # sample every 30 minutes
+#' plan(scheduler(), '1 hour') # sample every hour
+#' plan(scheduler(), '30 min') # sample every 30 minutes
 #' @export
 plan <- function(scheduler, ...) UseMethod('plan')
 plan.default <- function(x, ...) warning(paste0('plan cannot handle class ', class(x)))

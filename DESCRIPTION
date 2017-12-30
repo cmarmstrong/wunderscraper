@@ -4,8 +4,7 @@ Version: 0.0.0.9000
 Authors@R: person("Chandler", "Armstrong", email = "omni.armstrong@gmail.com",
                   role = c("aut", "cre"))
 Description: Scrape Wunderground API.  Provides multistage sampling strategies,
-    respects API usage limits, and quietly collects and saves Wunderground data
-    in the background.
+    respects API usage limits, and collects and saves Wunderground data.
 Depends: R (>= 3.4.1)
 Imports: httr,
     jsonlite,

@@ -26,9 +26,8 @@ Plans a schedule for executing a task using strptime
 }}
 
 \examples{
-mycounter <- counter(plan='drizzle')
-plan(scheduler(mycounter), '1 hour') # sample every hour
-plan(scheduler(mycounter), '30 min') # sample every 30 minutes
+plan(scheduler(), '1 hour') # sample every hour
+plan(scheduler(), '30 min') # sample every 30 minutes
 }
 \seealso{
 \code{\link{strptime}}, \code{\link{seq.POSIXt}}

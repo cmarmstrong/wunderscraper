@@ -24,7 +24,7 @@ Syncs scheduler's schedule to current time
 }}
 
 \examples{
-sync(scheduler(counter()))
+sync(scheduler())
 }
 \seealso{
 \code{\link{Sys.time}}

@@ -18,12 +18,16 @@ usage limits.
 \section{Wunderscraper objects}{
 
 \code{\link{scheduler}}
-\code{\link{counter}}
 }
 
 \section{Wunderscraper methods}{
 
 \code{\link{plan.scheduler}}
 \code{\link{sync.scheduler}}
+}
+
+\section{Wunderscraper data}{
+
+\code{\link{zctaRel}}
 }
 

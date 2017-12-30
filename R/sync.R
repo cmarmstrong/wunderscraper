@@ -6,7 +6,7 @@
 #' @return Returns TRUE when successful.
 #' @seealso \code{\link{Sys.time}}
 #' @examples
-#' sync(scheduler(counter()))
+#' sync(scheduler())
 #' @export
 sync <- function(scheduler) UseMethod('sync')
 sync.default <- function(x) warning(paste0('sync cannot handle class ', class(x)))
