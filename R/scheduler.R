@@ -1,7 +1,6 @@
 #' Schedules wunderscraper
 #'
-#' Uses a schedule and counter to schedule sampling and ensure wunderscraper
-#' remains within API usage limits.
+#' Schedule sampling and ensure wunderscraper remains within API usage limits.
 #'
 #' Scheduler is a constructor function that returns a scheduler object for use
 #' in a wunderscrape process.
