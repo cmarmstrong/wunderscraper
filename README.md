@@ -30,9 +30,12 @@ adequate coverage.  Stratified sampling repeats a sample stage for each
 sub-population.  See the examples in the next section for more details.
 
 ## features
-- Wunderscraper is integrated with \code{\link{tigris}} for state and county
+- Wunderscraper is integrated with the tigris package for state and county
   administrative boundaries
 ```r
+library(wunderscraper)
+schedulerMMDD <- scheduler()
+setApiKey(f="apikey.txt")
 ## sample 1 county and collect all weather stations.  Will keep only stations
 ## within the county administrative boundary, as determined from tigris
 scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=1)
@@ -40,6 +43,7 @@ scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=1)
 
 - Multistage sampling provides efficient coverage over an area of interest
 ```r
+data(zctaRel)
 ## monitor a tri-state area
 triState <- zctaRel[zctaRel $STATEFP %in% c("09", "34", "36"), ]
 repeat scrape(schedulerMMDD, c("STATEFP", "GEOID", "ZCTA5"), size=c(1, 10, 1, 10),
@@ -51,6 +55,7 @@ repeat scrape(schedulerMMDD, c("STATEFP", "GEOID", "ZCTA5"), size=c(1, 10, 1, 10
 ## monitor a tri-state, stratified by state to ensure complete coverage each sample
 repeat scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(10, 1, 10), strata=rep("STATEFP", 3),
               sampleFrame=triState)
+```
 
 - Create spatial grids on the fly for stages or strata
 ```r
