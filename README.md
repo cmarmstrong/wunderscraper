@@ -57,6 +57,18 @@ repeat scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(10, 1, 10), strata=rep(
               sampleFrame=triState)
 ```
 
+- Set a schedule to control period of repeat samples
+```r
+## monitor a tri-state area with two hour period
+plan(schedulerMMDD, '2 hours')
+repeat {
+    scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(10, 1, 10), strata=rep("STATEFP", 3),
+           sampleFrame=triState)
+    sync(scheduler)
+}
+```
+
+
 - Create spatial grids on the fly for stages or strata
 ```r
 ## sample 1 state, create grid cells of 1 degree and sample 1 cell.  Will keep
