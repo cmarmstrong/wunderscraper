@@ -25,12 +25,41 @@ focusing on a population of interest.  Multistage sampling is the primary tool
 for partitioning a population into independent units.  The initial stages draw
 samples from a large unit, like regions or states.  From within the units of the
 initial stages, later stages draw samples from smaller units, like counties or
-zip codes.  Stratafied sampling is a tool for ensuring subpopulations recieve
-adequate coverage.  Stratafied sampling repeats a sample stage for each
-subpopulation.  See the examples in the next section for more details.
+zip codes.  Stratified sampling is a tool for ensuring sub-populations recieve
+adequate coverage.  Stratified sampling repeats a sample stage for each
+sub-population.  See the examples in the next section for more details.
 
 ## features
 - Wunderscraper is integrated with \code{\link{tigris}} for state and county
   administrative boundaries
-  #' scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
-#'        strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
+```r
+## sample 1 county and collect all weather stations.  Will keep only stations
+## within the county administrative boundary, as determined from tigris
+scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=1)
+```
+
+- Multistage sampling provides efficient coverage over an area of interest
+```r
+## monitor a tri-state area
+triState <- zctaRel[zctaRel $STATEFP %in% c("09", "34", "36"), ]
+repeat scrape(schedulerMMDD, c("STATEFP", "GEOID", "ZCTA5"), size=c(1, 10, 1, 10),
+              sampleFrame=triState)
+```
+
+- Stratified sampling ensures all sub-populations are adequately covered
+```r
+## monitor a tri-state, stratified by state to ensure complete coverage each sample
+repeat scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(10, 1, 10), strata=rep("STATEFP", 3),
+              sampleFrame=triState)
+
+- Create spatial grids on the fly for stages or strata
+```r
+## sample 1 state, create grid cells of 1 degree and sample 1 cell.  Will keep
+## only stations within the cell.
+scrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5"), size=c(1, 1), cellsize=1)
+```
+
+- More examples in scrape
+```r
+?scrape
+```

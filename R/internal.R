@@ -111,11 +111,14 @@
         sampleFrame <- .getSampleFrame(dfr, id[i], weight[i]) # drops geometry
         if(is.na(size[i])) selection <- sampleFrame $id # complete sampling
         else if(is.na(strata[i])) { # simple sampling
-            selection <- with(sampleFrame, sample(id, size[i], prob=weight))
+            if(nrow(sampleFrame) < size[i]) selection <- sampleFrame $id # pop < sample size
+            else selection <- with(sampleFrame, sample(id, size[i], prob=weight))
         } else { # stratified sampling
+            if(is.na(size[i])) stop('stratafied sampling must have size')
             getStrataFrame <- function(strataFrame) { # .getSampleFrame for each strata
-                with(.getSampleFrame(strataFrame, id[i], weight[i]),
-                     sample(id, size[i], prob=weight)) # stratified sampling must have size
+                strataFrame <- .getSampleFrame(strataFrame, id[i], weight[i])
+                if(nrow(strataFrame) < size[i]) strataFrame $id
+                else with(strataFrame, sample(id, size[i], prob=weight))
             }
             selection <- unlist(by(dfr, dfr[, strata[i], drop=TRUE], getStrataFrame))
         }

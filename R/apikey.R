@@ -12,7 +12,7 @@
 #' setApiKey('1a2b3c4d5e6f7g8h9i0j')
 #' @export
 setApiKey <- function(key, f=NULL) {
-    if(!is.null(f)) key <- readChar(f, file.info(f)$size)
+    if(!is.null(f)) key <- trimws(readChar(f, file.info(f)$size))
     Sys.setenv(WUNDERSCRAPER_KEY=key)
     TRUE
 }

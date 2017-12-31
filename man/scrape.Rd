@@ -101,15 +101,14 @@ rds format.
 \dontrun{
 setApiKey(f='wuApiKey.txt')
 schedulerMMDD <- scheduler()
-## select random county and sample from 1km^2 strata
-scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
-       strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01))
+## select random county and sample one station from each 1km^2
+scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1), strata=c(NA, NA, "GRID"),
+       weight="COPOP", cellsize=c(NA, 0.01))
 ## same, but limit sampling to southeastern US
 data(zctaRel)
 SE <- c("01", "05", "12", "13", "21", "22", "24", "28", "37", "45", "47", "51", "54")
-scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1),
-       strata=c(NA, NA, "GRID"), weight="COPOP", cellsize=c(NA, 0.01),
-       sampleFrame=zctaRel[zctaRel $STATEFP \%in\% SE, ])
+scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1), strata=c(NA, NA, "GRID"),
+       weight="COPOP", cellsize=c(NA, 0.01), sampleFrame=zctaRel[zctaRel $STATEFP \%in\% SE, ])
 ## select two states and in each state select a 100km^2 area and sample five zip codes
 ## stratified into 1km^2 areas.
 scrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5"), size=c(2, 1, 5, 1),
@@ -121,6 +120,10 @@ repeat {
   scrape(schedulerMMDD, "ZCTA5", strata=c(NA, "GRID"), cellsize=0.01, sampleFrame=sampleFrame)
   sync(schedulerMMDD) # sync schedule after each sample to wait for next scheduled sample
 }
+## stratify by rural and urban to ensure both types of areas recieve adequate representation
+zctaRel $RURAL <- log(zctaRel $COPOP) < 10
+scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, 8, 1), strata=c("RURAL", "RURAL", "GRID"),
+       weight="COPOP", cellsize=c(NA, 0.01), sampleFrame=zctaRel)
 }
 }
 \seealso{
