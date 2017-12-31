@@ -14,20 +14,20 @@ devtools::install_github('cmarmstrong/wunderscraper')
 Sampling is a method for constructing a representation of a population.  At the
 heart of sampling theory is _independence_; sampling one unit shouldn't change
 the probability of sampling another. Spatial sampling is especially challenging
-because sampling units are not independent.  Measurements of weather at a point
-in space are related to nearby points, and randomly sampling one of these points
-ought to alter the probability that nearby points are later sampled.  One way to
-preserve spatial independence is to partition space into units that are
-independent, and draw a representation from each unit.
+because units are not independent.  Measurements at one weather station will be
+correlated with those at nearby stations, and correlated samples will make
+effects and relationships appear larger or more certain than they should be.
+One way to preserve spatial independence is to partition space into units that
+are independent, and draw a representation from each partition-unit.
 
 Sampling methods offer a couple of basic tools for preserving independence and
 focusing on a population of interest.  Multistage sampling is the primary tool
 for partitioning a population into independent units.  The initial stages draw
-samples from a large unit, like regions or states.  From within the units of the
-initial stages, later stages draw samples from smaller units, like counties or
-zip codes.  Stratified sampling is a tool for ensuring sub-populations recieve
-adequate coverage.  Stratified sampling repeats a sample stage for each
-sub-population.  See the examples in the next section for more details.
+samples from a large unit, like regions or states, and later stages draw samples
+from smaller units, like counties or zip codes.  Stratified sampling is a tool
+for ensuring sub-populations recieve adequate coverage.  Stratified sampling
+repeats a sample stage for each sub-population.  See the examples in the next
+section for more details.
 
 ## features
 - Wunderscraper is integrated with the tigris package for state and county
