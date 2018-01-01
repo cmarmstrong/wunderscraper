@@ -10,7 +10,7 @@
   \item{COUNTYFP}{3 character string indicating county Federal Information
     Processing Standard (FIPS) code}
   \item{STATEFP}{2 character string indicating state FIPS code}
-  \item{GEOID}{5 character string concatonating STATEFP and COUNTYFP}
+  \item{GEOID}{5 character string concatenating STATEFP and COUNTYFP}
   \item{STPOP}{state population}
   \item{COPOP}{county population}
   \item{ZPOP}{zip code population}

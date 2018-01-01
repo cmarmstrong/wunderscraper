@@ -30,7 +30,7 @@ values indicate simple sampling.  Wunderscraper will repeat sampling in
 each strata.}
 
 \item{weight}{A vector of strings specifying variable names for numeric
-variables that indiciate sampling weights.  NA values specify unweighted
+variables that indicate sampling weights.  NA values specify unweighted
 sampling.}
 
 \item{cellsize}{A vector of numerics specifying cellsize for adding grids to
@@ -54,7 +54,7 @@ will be the name of an rds file containing the sample in a dataframe.}
 }
 \value{
 Wunderscrape may output the data directly to a file or to standard
-  out.  The output can be the JSON payload as recieved from Wunderground, or
+  out.  The output can be the JSON payload as received from Wunderground, or
   converted to a dataframe, with each complete sample comprising one
   dataframe, and each dataframe saved in rds format.  Whether in rds or json,
   all file output is named by the selected sampling units and date in epoch
@@ -85,7 +85,7 @@ respectively.
 Wunderscraper may use population or land area as a weighting variable.
 County population and state population are \code{"COPOP"} and \code{"STPOP"}
 respectively.  Similarly, county and state area are \code{"COAREA"} and
-\code{"STAREA"}, respectivley, where \code{"COLAND"} and \code{"STLAND"} are
+\code{"STAREA"}, respectively, where \code{"COLAND"} and \code{"STLAND"} are
 land areas without water.  See \code{\link{zctaRel}} for more details on
 available weighting variables.
 
