@@ -76,7 +76,7 @@ repeat {
 - Create spatial grids on the fly for stages or strata
 ```r
 ## sample stations at a resolution of 0.01 degrees, one station per grid of resolution
-scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(10, 1), strata=c(NA, NA, "GRID"),
+scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(10, 1, 1), strata=c(NA, NA, "GRID"),
        cellsize=c(NA, 0.01))
 ```
 
