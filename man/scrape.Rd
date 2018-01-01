@@ -34,9 +34,10 @@ variables that indiciate sampling weights.  NA values specify unweighted
 sampling.}
 
 \item{cellsize}{A vector of numerics specifying cellsize for adding grids to
-TIGER geometries.  TIGER geometries are in the unit of latitude-longitude
-degrees.  value of NA specifies no grid.  The grids will be available to
-the next stage with the identifying variable GRID.}
+TIGER county geometries; grids larger than the scale of a county should be
+added directly to the sampleFrame.  TIGER geometries are in the unit of
+latitude-longitude degrees.  value of NA specifies no grid.  The grids will
+be available to the next stage with the identifying variable GRID.}
 
 \item{sampleFrame}{A dataframe representing the sampling frame.  The
 dataframe must contain columns named "STATEFP" and "GEOID", along with

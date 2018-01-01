@@ -100,7 +100,7 @@
     sampleParams <- list(size=size, id=id, strata=strata, weight=weight, cellsize=cellsize)
     nstages <- max(lengths(sampleParams)) # number of sampling stages
     ## error checking
-    if(any(is.na(rle(strata) $values[-1]))) stop('strata must remain nested') # no NA after strata
+    if(any(rle(is.na(strata)) $values[-1])) stop('strata must remain nested') # no NA after strata
     if(length(id)<nstages-1) stop('id must exist for all stages')
     else if(length(id)<nstages) {
         warning('id of last stage is missing; assumed to be "id"')
