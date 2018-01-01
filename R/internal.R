@@ -94,19 +94,23 @@
 
 .wuSample <- function(scheduler, id, size, strata, weight, cellsize, sampleFrame) {
     ## enact a sampling strategy upon wunderground API
-    dfr <- sampleFrame
-    geom <- .ringmaster() # defaults to state geometries
+    geom <- .ringmaster() # initialize to state geometries
     geom $GEOID <- NULL # state GEOID == STATEFP
-    dfr $GRID <- 1 # initialize GRID and geometry
-    dfr <- merge(geom, dfr, by='STATEFP') # merge.sf
+    sampleFrame $GRID <- 1 # initialize GRID
+    dfr <- merge(geom, sampleFrame, by='STATEFP') # merge.sf
     sampleParams <- list(size=size, id=id, strata=strata, weight=weight, cellsize=cellsize)
     nstages <- max(lengths(sampleParams)) # number of sampling stages
     ## error checking
-    if(length(id)<nstages-1) stop('id must exist for all stages; last stage equals "id" or nothing')
-    else if(length(id)<nstages) sampleParams $id <- c(id, 'id')
-    else if(id[nstages]!='id') stop('id of last stage must equal "id" or nothing')
+    if(any(is.na(rle(strata) $values[-1]))) stop('strata must remain nested') # no NA after strata
+    if(length(id)<nstages-1) stop('id must exist for all stages')
+    else if(length(id)<nstages) {
+        warning('id of last stage is missing; assumed to be "id"')
+        sampleParams $id <- c(id, 'id')
+    }
+    else if(id[nstages]!='id') stop('id of last stage must be identical to "id"')
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
     list2env(sampleParams, environment()) # "attach" sampleParams to environment
+    ## main loop
     for(i in 1:nstages) { # index the arg vectors by i
         sampleFrame <- .getSampleFrame(dfr, id[i], weight[i]) # drops geometry
         if(is.na(size[i])) selection <- sampleFrame $id # complete sampling

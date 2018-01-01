@@ -12,7 +12,7 @@ setApiKey(key, f = NULL)
 \item{f}{A string indicating a text file containing only an API key}
 }
 \value{
-TRUE if setApiKey succeded
+The API key
 }
 \description{
 Sets the API key to the value of the argument.

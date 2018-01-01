@@ -2,8 +2,12 @@
 A package for sampling weather stations via Wunderground
 
 ## overview
-Wunderground offers a wealth of real-time weather data from personal weather
-stations across the US.  Wunderscraper helps people sample Wunderground data.
+Wunderscraper helps tap and organize a wealth of real-time weather data from
+Wunderground.  Wunderscraper's primary feature is its ability to sample from
+Wunderground.  The real-time nature of Wunderground's vast network of weather
+stations must be sampled; it is impossible to collect data from all the
+stations all the time.  Wunderscraper provides flexible spatial and temporal
+sampling to efficiently build a representation of weather at hyper local scales.
 
 ## installation
 ```r
@@ -15,18 +19,19 @@ Sampling is a method for constructing a representation of a population.  At the
 heart of sampling theory is _independence_; sampling one unit shouldn't change
 the probability of sampling another. Spatial sampling is especially challenging
 because units are not independent.  Measurements at one weather station will be
-correlated with those at nearby stations, and correlated samples will make
-effects and relationships appear larger or more certain than they should be.
-One way to preserve spatial independence is to partition space into units that
-are independent, and draw a representation from each partition-unit.
+correlated with those at nearby stations.  One way to preserve spatial
+independence is to partition space into units that are independent, and draw a
+representation from each partition.
 
 Sampling methods offer a couple of basic tools for preserving independence and
 focusing on a population of interest.  Multistage sampling is the primary tool
 for partitioning a population into independent units.  The initial stages draw
 samples from a large unit, like regions or states, and later stages draw samples
-from smaller units, like counties or zip codes.  Stratified sampling is a tool
-for ensuring sub-populations recieve adequate coverage.  Stratified sampling
-repeats a sample stage for each sub-population.  See the examples in the next
+from smaller units nested within the larger ones, eg counties or zip codes.
+Stratified sampling is a tool for ensuring sub-populations recieve adequate
+coverage.  Stratified sampling repeats a sample stage for each sub-population.
+Stratified sampling is useful for evenly covering sub-populations, or for
+oversampling a particularly small sub-population.  See the examples in the next
 section for more details.
 
 ## features
@@ -38,7 +43,7 @@ schedulerMMDD <- scheduler()
 setApiKey(f="apikey.txt")
 ## sample 1 county and collect all weather stations.  Will keep only stations
 ## within the county administrative boundary, as determined from tigris
-scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=1)
+scrape(schedulerMMDD, c("GEOID", "ZCTA5", "id"), size=1)
 ```
 
 - Multistage sampling provides efficient coverage over an area of interest
@@ -64,7 +69,7 @@ plan(schedulerMMDD, '2 hours')
 repeat {
     scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(10, 1, 10), strata=rep("STATEFP", 3),
            sampleFrame=triState)
-    sync(scheduler)
+    sync(schedulerMMDD)
 }
 ```
 
@@ -73,7 +78,7 @@ repeat {
 ```r
 ## sample 1 state, create grid cells of 1 degree and sample 1 cell.  Will keep
 ## only stations within the cell.
-scrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5"), size=c(1, 1), cellsize=1)
+scrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5", "id"), size=c(1, 1, 3), cellsize=1)
 ```
 
 - More examples in scrape

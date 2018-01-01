@@ -13,7 +13,7 @@ sync(scheduler)
 \item{scheduler}{A \code{\link{scheduler}} object.}
 }
 \value{
-Returns TRUE when successful.
+The synced schedule
 }
 \description{
 Syncs scheduler's schedule to current time

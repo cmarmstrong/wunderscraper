@@ -3,7 +3,7 @@
 #' Syncs scheduler's schedule to current time
 #'
 #' @param scheduler A \code{\link{scheduler}} object.
-#' @return Returns TRUE when successful.
+#' @return The synced schedule
 #' @seealso \code{\link{Sys.time}}
 #' @examples
 #' sync(scheduler())
@@ -17,5 +17,5 @@ sync.scheduler <- function(scheduler) {
     scheduler $now <- Sys.time()
     scheduler $schedule <- with(scheduler,
                                 c(schedule[schedule>now], schedule[schedule<=now]))
-    TRUE
+    scheduler $schedule
 }

@@ -15,10 +15,10 @@ plan(scheduler, ...)
 \item{...}{Arguments passed to \code{\link{seq.POSIXt}}.}
 }
 \value{
-Returns TRUE when successful.
+The schedule
 }
 \description{
-Plans a schedule for executing a task using strptime
+Sets a schedule using strptime
 }
 \section{Methods (by class)}{
 \itemize{

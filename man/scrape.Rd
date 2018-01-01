@@ -12,8 +12,9 @@ scrape(scheduler, id, size = NA, strata = NA, weight = NA,
 \item{scheduler}{A scheduler object.}
 
 \item{id}{A vector of strings specifying variable names for cluster
-identifiers.  The unit identifiers of the last stage will also supply the
-`q' parameters for Wunderground geolookups.  The `q' parameter must be a
+identifiers.  The id of the last stage must be "id" or it will be assumed
+be "id".  The unit identifiers of the second-to-last stage will also supply
+the `q' parameters for Wunderground geolookups.  The `q' parameter must be a
 zip code, city name, or latitude/longitude.  Zip codes must have 5 digits.
 City names must be strings with underscores for spaces.  Latitude/longitude
 must be a string of two floating point numbers separated by a comma.  Data

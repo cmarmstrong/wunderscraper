@@ -7,14 +7,14 @@
 #'
 #' @param key A valid Wunderground API key
 #' @param f A string indicating a text file containing only an API key
-#' @return TRUE if setApiKey succeded
+#' @return The API key
 #' @examples
 #' setApiKey('1a2b3c4d5e6f7g8h9i0j')
 #' @export
 setApiKey <- function(key, f=NULL) {
     if(!is.null(f)) key <- trimws(readChar(f, file.info(f)$size))
     Sys.setenv(WUNDERSCRAPER_KEY=key)
-    TRUE
+    key
 }
 
 .getApiKey <- function() {
