@@ -3,7 +3,6 @@ A package for sampling weather stations via Wunderground
 
 ## overview
 Wunderscraper helps tap and organize a wealth of real-time weather data from
-Wunderground.  Wunderscraper's primary feature is its ability to sample from
 Wunderground.  The real-time nature of Wunderground's vast network of weather
 stations must be sampled; it is impossible to collect data from all the
 stations all the time.  Wunderscraper provides flexible spatial and temporal
@@ -76,9 +75,8 @@ repeat {
 
 - Create spatial grids on the fly for stages or strata
 ```r
-## sample 1 state, create grid cells of 1 degree and sample 1 cell.  Will keep
-## only stations within the cell.
-scrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5", "id"), size=c(1, 1, 3), cellsize=1)
+## sample stations at a resolution of 0.01 degrees, one station per grid of resolution
+scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(10, 1), cellsize=c(NA, NA, 0.01))
 ```
 
 - More examples in scrape

@@ -74,8 +74,7 @@
     if(!is.na(cellsize)) {
         if(cellsize<=0) geom $GRID <- 1
         else { # TODO: generate random offset for make_grid
-            ## cells <- sf::st_make_grid(geom, cellsize)
-            cells <- by(geom, geom $GEOID, sf::st_make_grid, cellsize)
+            cells <- by(geom, geom $GEOID, sf::st_make_grid, cellsize, simplify=FALSE)
             cells <- do.call(c, cells)
             cells <- sf::st_sf(data.frame(geometry=cells, GRID=1:length(cells)))
             geom <- sf::st_intersection(cells, geom)
