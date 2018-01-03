@@ -93,10 +93,6 @@
 
 .wuSample <- function(scheduler, id, size, strata, weight, cellsize, sampleFrame) {
     ## enact a sampling strategy upon wunderground API
-    geom <- .ringmaster() # initialize to state geometries
-    geom $GEOID <- NULL # state GEOID == STATEFP
-    sampleFrame $GRID <- 1 # initialize GRID
-    dfr <- merge(geom, sampleFrame, by='STATEFP') # merge.sf
     sampleParams <- list(size=size, id=id, strata=strata, weight=weight, cellsize=cellsize)
     nstages <- max(lengths(sampleParams)) # number of sampling stages
     ## error checking
@@ -112,6 +108,11 @@
     else if(id[nstages]!='id') stop('id of last stage must be identical to "id"')
     sampleParams <- lapply(sampleParams, `length<-`, nstages) # args are equal length
     list2env(sampleParams, environment()) # "attach" sampleParams to environment
+    ## initialize geometry
+    geom <- .ringmaster() # initialize to state geometries
+    geom $GEOID <- NULL # state GEOID == STATEFP
+    sampleFrame $GRID <- 1 # initialize GRID
+    dfr <- merge(geom, sampleFrame, by='STATEFP') # merge.sf
     ## main loop
     for(i in 1:nstages) { # index the arg vectors by i
         sampleFrame <- .getSampleFrame(dfr, id[i], weight[i]) # drops geometry

@@ -6,4 +6,4 @@ names(STPOP) <- c('STATEFP', 'STPOP')
 zctaRel <- merge(zctaRel, STPOP, by='STATEFP')
 zctaRel <- zctaRel[, c('ZCTA5', 'STATEFP', 'COUNTYFP', 'GEOID', 'STPOP', 'COPOP', 'ZPOP', 'POPPT')]
 
-save(zctaRel, file='data/zctaRel.rda')
+save(zctaRel, file='data/zctaRel.rda', compress='xz')
