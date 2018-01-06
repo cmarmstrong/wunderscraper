@@ -5,7 +5,7 @@ Authors@R: person("Chandler", "Armstrong", email = "omni.armstrong@gmail.com",
                   role = c("aut", "cre"))
 Description: Scrape Wunderground API.  Provides multistage sampling strategies,
     respects API usage limits, and collects and saves Wunderground data.
-Depends: R (>= 3.4.1)
+Depends: R (>= 3.4.0)
 Imports: httr,
     jsonlite,
     sf,
