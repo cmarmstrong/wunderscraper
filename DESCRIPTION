@@ -1,10 +1,11 @@
 Package: wunderscraper
-Title: Scrape Wunderground API
+Title: Scrape the 'Wunderground' API
 Version: 0.1.0
 Authors@R: person("Chandler", "Armstrong", email = "omni.armstrong@gmail.com",
                   role = c("aut", "cre"))
-Description: Scrape Wunderground API.  Provides multistage sampling strategies,
-    respects API usage limits, and collects and saves Wunderground data.
+Description: A function for randomly sampling from the 'Wunderground' API
+    <http://api.wunderground.com>.  Provides multistage sampling strategies,
+    respects API usage limits, and collects and saves 'Wunderground' data.
 Depends: R (>= 3.4.0)
 Imports: httr,
     jsonlite,
