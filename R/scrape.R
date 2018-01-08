@@ -39,10 +39,12 @@
 #'
 #' @param scheduler A scheduler object.
 #' @param id A vector of strings specifying variable names for cluster
-#'   identifiers.  The id of the last stage must be "id" or it will be assumed
-#'   be "id".  The unit identifiers of the second-to-last stage will also supply
-#'   the `q' parameters for Wunderground geolookups.  The `q' parameter must be a
-#'   zip code, city name, or latitude/longitude.  Zip codes must have 5 digits.
+#'   identifiers.  The id of the last stage must be "id".  If "id" is missing
+#'   but 'scrape' can unambiguously assume the last stage is "id" then it will
+#'   do so with a warning, otherwise 'scrape' will raise an error message.  The
+#'   unit identifiers of the second-to-last stage will also supply the `q'
+#'   parameters for Wunderground geolookups.  The `q' parameter must be a zip
+#'   code, city name, or latitude/longitude.  Zip codes must have 5 digits.
 #'   City names must be strings with underscores for spaces.  Latitude/longitude
 #'   must be a string of two floating point numbers separated by a comma.  Data
 #'   that does not meet these requirements may find no results from the
@@ -67,16 +69,14 @@
 #'   \code{\link{zctaRel}}.
 #' @param form A character string specifying output format.  An NA value sends
 #'   output to standard out and will always be in JSON format.  Possible formats
-#'   are: "json"; any other value will result in an error.
+#'   are: "json"; any other value will currently result in an error with the
+#'   message "not implemented".
 #' @param o A character string specifying output directory or file.  If
-#'   \code{form='json'} then this will be a directory with each station, else it
-#'   will be the name of an rds file containing the sample in a dataframe.
+#'   \code{form='json'} then this will be a directory with each station, other
+#'   formats are not yet supported.
 #' @return Wunderscrape may output the data directly to a file or to standard
-#'   out.  The output can be the JSON payload as received from Wunderground, or
-#'   converted to a dataframe, with each complete sample comprising one
-#'   dataframe, and each dataframe saved in rds format.  Whether in rds or json,
-#'   all file output is named by the selected sampling units and date in epoch
-#'   time.
+#'   out.  All file output is named by the station identification code and date
+#'   in epoch time.
 #' @seealso \code{\link[rwunderground]{conditions}}
 #' @examples
 #' \dontrun{
