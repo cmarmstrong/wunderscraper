@@ -82,7 +82,8 @@
 #' \dontrun{
 #' setApiKey(f='wuApiKey.txt')
 #' schedulerMMDD <- scheduler()
-#' ## select random county and sample one station from each 1km^2
+#' ## select random county and sample one station from each 0.01 arc degrees
+#' ## (roughly 1km^2 at the equator)
 #' scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1), strata=c(NA, NA, "GRID"),
 #'        weight="COPOP", cellsize=c(NA, 0.01))
 #' ## same, but limit sampling to southeastern US
@@ -90,8 +91,9 @@
 #' SE <- c("01", "05", "12", "13", "21", "22", "24", "28", "37", "45", "47", "51", "54")
 #' scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1), strata=c(NA, NA, "GRID"),
 #'        weight="COPOP", cellsize=c(NA, 0.01), sampleFrame=zctaRel[zctaRel $STATEFP %in% SE, ])
-#' ## select two states and in each state select a 100km^2 area and sample five zip codes
-#' ## stratified into 1km^2 areas.
+#' ## select two states and in each state select a 1 arc degree area (roughly
+#' ## 100km^2 at the equator) and sample five zip codes, each stratified into
+#' ## 0.01 arc degree areas
 #' scrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5"), size=c(2, 1, 5, 1),
 #'        strata=c(NA, "STATEFP", "GRID", "GRID"), cellsize=c(1, NA, 0.01))
 #' ## periodically resample one location
