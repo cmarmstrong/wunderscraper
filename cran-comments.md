@@ -12,4 +12,5 @@ is valid but restricted to a daily and minute usage limit, and I cannot
 guarantee that the usage limits will not be exceeded at any given point in time.
 If that happens, then users may find that the examples do not work.  In such an
 event, however, 'wunderscraper' will print a helpful message and encourage users
-to sign up for a free API key that they may use for running the examples.
+to sign up for a free API key that they may use for running the examples and
+operating wunderscraper.
