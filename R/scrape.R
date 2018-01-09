@@ -1,14 +1,14 @@
-#' Scrape wunderground API
+#' Scrape Wunderground API
 #'
-#' Scrape wunderground API with a sampling strategy based on states, counties,
-#' zip codes, or a grid.
+#' Randomly samples from Wunderground API with a sampling strategy based on
+#' states, counties, zip codes, or a grid.
 #'
-#' Scrapes wunderground API with a possibly multistage sampling strategy.  The
-#' sampling strategy has one constraint: the last stage of the strategy must be:
-#' zip code, city name, or latitude/longitude.  Wunderscraper sends the values
-#' of the final stage identifier as queries to the wunderground API.  In addition
-#' to stages users may specify weights or strata, and may also generate spatial
-#' grids to use as stages or strata.
+#' The sampling strategy has two constraints: 1) the next to last stage of the
+#' strategy must be: zip code, city name, or latitude/longitude, and 2) the last
+#' stage must sample individual weather stations.  Wunderscraper sends the values
+#' of the next to last stage identifier as queries to the Wunderground API.  In
+#' addition to stages users may specify weights or strata, and may also generate
+#' spatial grids to use as stages or strata.
 #'
 #' Users specify a sampling strategy through a set of vector-valued arguments
 #' that indicate the sampling stages, sizes, strata, and weights.  All sampling
@@ -42,13 +42,13 @@
 #'   identifiers.  The id of the last stage must be "id".  If "id" is missing
 #'   but 'scrape' can unambiguously assume the last stage is "id" then it will
 #'   do so with a warning, otherwise 'scrape' will raise an error message.  The
-#'   unit identifiers of the second-to-last stage will also supply the `q'
-#'   parameters for Wunderground geolookups.  The `q' parameter must be a zip
-#'   code, city name, or latitude/longitude.  Zip codes must have 5 digits.
-#'   City names must be strings with underscores for spaces.  Latitude/longitude
-#'   must be a string of two floating point numbers separated by a comma.  Data
-#'   that does not meet these requirements may find no results from the
-#'   Wunderground API, or may cause an error.
+#'   unit identifiers of the second-to-last stage will also supply the 'q'
+#'   parameters for Wunderground geolookups.  The 'q' parameter must be a zip
+#'   code, city name, or latitude/longitude.  Zip codes must have 5 digits.  City
+#'   names must be strings with underscores for spaces.  Latitude/longitude must
+#'   be a string of two floating point numbers separated by a comma.  Data that
+#'   does not meet these requirements may find no results from the Wunderground
+#'   API, or may cause an error.
 #' @param size A vector of integers specifying sample size at each stage. NA
 #'   values specify complete sampling.  If not specified for all stages then
 #'   unspecified stages are assumed complete sampling.
