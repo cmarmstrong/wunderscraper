@@ -2,7 +2,7 @@
 % Please edit documentation in R/scrape.R
 \name{scrape}
 \alias{scrape}
-\title{Scrape wunderground API}
+\title{Scrape Wunderground API}
 \usage{
 scrape(scheduler, id, size = NA, strata = NA, weight = NA,
   cellsize = NA, sampleFrame = wunderscraper::zctaRel, form = "json",
@@ -12,14 +12,16 @@ scrape(scheduler, id, size = NA, strata = NA, weight = NA,
 \item{scheduler}{A scheduler object.}
 
 \item{id}{A vector of strings specifying variable names for cluster
-identifiers.  The id of the last stage must be "id" or it will be assumed
-be "id".  The unit identifiers of the second-to-last stage will also supply
-the `q' parameters for Wunderground geolookups.  The `q' parameter must be a
-zip code, city name, or latitude/longitude.  Zip codes must have 5 digits.
-City names must be strings with underscores for spaces.  Latitude/longitude
-must be a string of two floating point numbers separated by a comma.  Data
-that does not meet these requirements may find no results from the
-Wunderground API, or may cause an error.}
+identifiers.  The id of the last stage must be "id".  If "id" is missing
+but 'scrape' can unambiguously assume the last stage is "id" then it will
+do so with a warning, otherwise 'scrape' will raise an error message.  The
+unit identifiers of the second-to-last stage will also supply the 'q'
+parameters for Wunderground geolookups.  The 'q' parameter must be a zip
+code, city name, or latitude/longitude.  Zip codes must have 5 digits.  City
+names must be strings with underscores for spaces.  Latitude/longitude must
+be a string of two floating point numbers separated by a comma.  Data that
+does not meet these requirements may find no results from the Wunderground
+API, or may cause an error.}
 
 \item{size}{A vector of integers specifying sample size at each stage. NA
 values specify complete sampling.  If not specified for all stages then
@@ -46,31 +48,29 @@ columns for any data required by the sampling strategy.  Defaults to
 
 \item{form}{A character string specifying output format.  An NA value sends
 output to standard out and will always be in JSON format.  Possible formats
-are: "json"; any other value will result in an error.}
+are: "json"; any other value will currently result in an error with the
+message "not implemented".}
 
 \item{o}{A character string specifying output directory or file.  If
-\code{form='json'} then this will be a directory with each station, else it
-will be the name of an rds file containing the sample in a dataframe.}
+\code{form='json'} then this will be a directory with each station, other
+formats are not yet supported.}
 }
 \value{
 Wunderscrape may output the data directly to a file or to standard
-  out.  The output can be the JSON payload as received from Wunderground, or
-  converted to a dataframe, with each complete sample comprising one
-  dataframe, and each dataframe saved in rds format.  Whether in rds or json,
-  all file output is named by the selected sampling units and date in epoch
-  time.
+  out.  All file output is named by the station identification code and date
+  in epoch time.
 }
 \description{
-Scrape wunderground API with a sampling strategy based on states, counties,
-zip codes, or a grid.
+Randomly samples from Wunderground API with a sampling strategy based on
+states, counties, zip codes, or a grid.
 }
 \details{
-Scrapes wunderground API with a possibly multistage sampling strategy.  The
-sampling strategy has one constraint: the last stage of the strategy must be:
-zip code, city name, or latitude/longitude.  Wunderscraper sends the values
-of the final stage identifier as queries to the wunderground API.  In addition
-to stages users may specify weights or strata, and may also generate spatial
-grids to use as stages or strata.
+The sampling strategy has two constraints: 1) the next to last stage of the
+strategy must be: zip code, city name, or latitude/longitude, and 2) the last
+stage must sample individual weather stations.  Wunderscraper sends the values
+of the next to last stage identifier as queries to the Wunderground API.  In
+addition to stages users may specify weights or strata, and may also generate
+spatial grids to use as stages or strata.
 
 Users specify a sampling strategy through a set of vector-valued arguments
 that indicate the sampling stages, sizes, strata, and weights.  All sampling
@@ -101,9 +101,10 @@ rds format.
 }
 \examples{
 \dontrun{
-setApiKey(f='wuApiKey.txt')
+## ?setApiKey before running examples
 schedulerMMDD <- scheduler()
-## select random county and sample one station from each 1km^2
+## select random county and sample one station from each 0.01 arc degrees
+## (roughly 1km^2 at the equator)
 scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1), strata=c(NA, NA, "GRID"),
        weight="COPOP", cellsize=c(NA, 0.01))
 ## same, but limit sampling to southeastern US
@@ -111,8 +112,9 @@ data(zctaRel)
 SE <- c("01", "05", "12", "13", "21", "22", "24", "28", "37", "45", "47", "51", "54")
 scrape(schedulerMMDD, c("GEOID", "ZCTA5"), size=c(1, NA, 1), strata=c(NA, NA, "GRID"),
        weight="COPOP", cellsize=c(NA, 0.01), sampleFrame=zctaRel[zctaRel $STATEFP \%in\% SE, ])
-## select two states and in each state select a 100km^2 area and sample five zip codes
-## stratified into 1km^2 areas.
+## select two states and in each state select a 1 arc degree area (roughly
+## 100km^2 at the equator) and sample five zip codes, each stratified into
+## 0.01 arc degree areas
 scrape(schedulerMMDD, c("STATEFP", "GRID", "ZCTA5"), size=c(2, 1, 5, 1),
        strata=c(NA, "STATEFP", "GRID", "GRID"), cellsize=c(1, NA, 0.01))
 ## periodically resample one location

@@ -80,7 +80,7 @@
 #' @seealso \code{\link[rwunderground]{conditions}}
 #' @examples
 #' \dontrun{
-#' setApiKey(f='wuApiKey.txt')
+#' ## ?setApiKey before running examples
 #' schedulerMMDD <- scheduler()
 #' ## select random county and sample one station from each 0.01 arc degrees
 #' ## (roughly 1km^2 at the equator)
