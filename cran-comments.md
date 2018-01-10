@@ -1,6 +1,14 @@
 ## Test environments
 
+* win-builder
+
 ## R CMD check results
+
+0 errors | 0 warnings | 3 notes
+
+* Maintainer: 'Chandler Armstrong <omni.armstrong@gmail.com>'
+* Found the following hidden files and directories: .travis.yml
+* Non-standard file/directory found at top level: 'cran-comments.md'
 
 ## Notes
 
