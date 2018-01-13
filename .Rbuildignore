@@ -1,2 +1,3 @@
 ^data-raw$
-^.travis.yml$
+^\.travis\.yml$
+^cran-comments\.md$
