@@ -4,11 +4,9 @@
 
 ## R CMD check results
 
-0 errors | 0 warnings | 3 notes
+0 errors | 0 warnings | 1 notes
 
 * Maintainer: 'Chandler Armstrong <omni.armstrong@gmail.com>'
-* Found the following hidden files and directories: .travis.yml
-* Non-standard file/directory found at top level: 'cran-comments.md'
 
 ## Notes
 
