@@ -9,6 +9,12 @@ stations all the time.  Wunderscraper provides flexible spatial and temporal
 sampling to efficiently build a representation of weather at hyper local scales.
 
 ## installation
+-CRAN release
+```r
+install.packages('wunderscraper')
+```
+
+-development version
 ```r
 devtools::install_github('cmarmstrong/wunderscraper')
 ```
