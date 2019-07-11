@@ -63,7 +63,7 @@
     if(!blocks) geom <- geom[geom $GEOID %in% geoid, ]
     if(!is.na(cellsize)) {
         if(cellsize<=0) geom $GRID <- 1
-        else { # TODO: generate random offset for make_grid
+        else { # TODO: random offset for make_grid; grid covering all geoms
             cells <- by(geom, geom $GEOID, sf::st_make_grid, cellsize, simplify=FALSE)
             cells <- do.call(c, cells)
             cells <- sf::st_sf(data.frame(geometry=cells, GRID=1:length(cells)))
@@ -82,7 +82,7 @@
 }
 
 .wuSample <- function(scheduler, id, size, strata, weight, cellsize, sampleFrame) {
-    ## enact a sampling strategy upon wunderground API
+    ## return a sampling strategy for .wuConditions
     sampleParams <- list(size=size, id=id, strata=strata, weight=weight, cellsize=cellsize)
     nstages <- max(lengths(sampleParams)) # number of sampling stages
     ## error checking
