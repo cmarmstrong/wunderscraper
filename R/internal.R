@@ -56,6 +56,7 @@
 
 .getGeometry <- function(geoid, cellsize, blocks=FALSE) {
     ## TIGER geometries with a factor for grid membership
+    ## TODO: random offset for make_grid OR common grid for all geometries
     states <- substr(geoid, 1, 2)
     counties <- substr(geoid, 3, 5)
     ## geom <- do.call(.ringmaster, list(states, counties))
@@ -63,7 +64,7 @@
     if(!blocks) geom <- geom[geom $GEOID %in% geoid, ]
     if(!is.na(cellsize)) {
         if(cellsize<=0) geom $GRID <- 1
-        else { # TODO: random offset for make_grid; grid covering all geoms
+        else { # grid covering all geoms
             cells <- by(geom, geom $GEOID, sf::st_make_grid, cellsize, simplify=FALSE)
             cells <- do.call(c, cells)
             cells <- sf::st_sf(data.frame(geometry=cells, GRID=1:length(cells)))
@@ -119,7 +120,7 @@
             }
             selection <- unlist(by(dfr, dfr[, strata[i], drop=TRUE], getStrataFrame))
         }
-        dfr <- dfr[dfr[, id[i], drop=TRUE] %in% selection, ] # has geometry
+        dfr <- dfr[dfr[, id[i], drop=TRUE] %in% selection, ] # keeps geometry
         if(!is.na(cellsize[i])) { # get new geometries and add grids of cellsize
             geom <- with(dfr, .getGeometry(unique(GEOID), cellsize[i]))
             sf::st_geometry(dfr) <- NULL
