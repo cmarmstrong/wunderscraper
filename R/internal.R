@@ -34,7 +34,7 @@
     .GETjson(Sys.getenv('WUNDERSCRAPER_URL'), wuUrn)
 }
 
-.wuGeolookup <- function(scheduler, queries) {
+.wuGeolookup <- function(scheduler, queries) { # TODO: return geolookup response for debugging
     ## returns sf with station id and POINT geometry columns
     geolookups <- lapply(unique(queries), function(query) {
         .schedule(scheduler)
